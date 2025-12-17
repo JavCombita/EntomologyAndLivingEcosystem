@@ -3,5 +3,8 @@
   "item.analyzer.description": "A high-tech device to measure NPK levels in the soil. Hold it to visualize soil health.",
   
   "item.shelter.name": "Ladybug Shelter",
-  "item.shelter.description": "A small house for beneficial insects. Protects nearby crops (4 tile radius) from pest invasions."
+  "item.shelter.description": "A small house for beneficial insects. Protects nearby crops (6 tile radius) from pest invasions.",
+
+  "mail.robin_shelter.title": "Old Blueprints found!",
+  "mail.robin_shelter.body": "Hey @,^I was dusting off some old shelves in the shop and found these blueprints for a 'Ladybug Shelter'.^My grandfather used to make them to keep pests away without chemicals. I think it would be perfect for your ecosystem project!^Stop by the shop if you want the recipe.^^   - Robin"
 }

@@ -2,13 +2,18 @@
     "Format": "2.0.0",
     "Changes": [
         {
-            "LogName": "Load Analyzer Texture",
+            "LogName": "Load Assets",
             "Action": "Load",
             "Target": "Mods/JavCombita/ELE/Analyzer",
             "FromFile": "assets/soil_analyzer.png"
         },
         {
-            "LogName": "Define Soil Analyzer Item",
+            "Action": "Load",
+            "Target": "Mods/JavCombita/ELE/Shelter",
+            "FromFile": "assets/ladybug_shelter.png"
+        },
+        {
+            "LogName": "Define Items",
             "Action": "EditData",
             "Target": "Data/Objects",
             "Entries": {
@@ -22,11 +27,22 @@
                     "Texture": "Mods/JavCombita/ELE/Analyzer", 
                     "SpriteIndex": 0,
                     "ContextTags": ["not_giftable", "color_yellow"]
+                },
+                "JavCombita.ELE_LadybugShelter": {
+                    "Name": "Ladybug Shelter",
+                    "DisplayName": "{{i18n:item.shelter.name}}",
+                    "Description": "{{i18n:item.shelter.description}}",
+                    "Type": "Crafting",
+                    "Category": -24, 
+                    "Price": 1000,
+                    "Texture": "Mods/JavCombita/ELE/Shelter", 
+                    "SpriteIndex": 0, 
+                    "ContextTags": ["not_giftable"]
                 }
             }
         },
         {
-            "LogName": "Add to SeedShop",
+            "LogName": "Add Analyzer to Pierre",
             "Action": "EditData",
             "Target": "Data/Shops",
             "TargetField": ["SeedShop", "Items"],
@@ -40,38 +56,55 @@
             }
         },
         {
-            "LogName": "Define Ladybug Shelter Item",
-            "Action": "EditData",
-            "Target": "Data/Objects",
-            "Entries": {
-                "JavCombita.ELE_LadybugShelter": {
-                    "Name": "Ladybug Shelter",
-                    "DisplayName": "{{i18n:item.shelter.name}}",
-                    "Description": "{{i18n:item.shelter.description}}",
-                    "Type": "Crafting",
-                    "Category": -24, 
-                    "Price": 1000,
-                    "Texture": "LooseSprites\\Cursors", 
-                    "SpriteIndex": 118, 
-                    "ContextTags": ["not_giftable"]
-                }
-            }
-        },
-        {
-            "LogName": "Add Shelter Recipe",
+            "LogName": "Define Crafting Recipe",
             "Action": "EditData",
             "Target": "Data/CraftingRecipes",
             "Entries": {
                 "Ladybug Shelter": "388 50 709 10/Home/JavCombita.ELE_LadybugShelter/true/null"
             }
         },
+        
+        // --- NUEVO SISTEMA DE DESBLOQUEO ---
+
+        // 1. Definir el contenido de la carta
         {
-            "LogName": "Unlock Recipe Default",
+            "LogName": "Add Mail Content",
             "Action": "EditData",
-            "Target": "Data/Farmer",
-            "TargetField": ["DefaultCraftingRecipes"],
+            "Target": "Data/mail",
             "Entries": {
-                "Ladybug Shelter": 1
+                "JavCombita.ELE_RobinShelterMail": "{{i18n:mail.robin_shelter.body}}"
+            }
+        },
+
+        // 2. Crear la lógica para enviar la carta (Trigger)
+        {
+            "LogName": "Logic: Send Mail on Level 3 + Robin 4 Hearts",
+            "Action": "EditData",
+            "Target": "Data/TriggerActions",
+            "Entries": {
+                "JavCombita.ELE_UnlockShelter": {
+                    "Id": "JavCombita.ELE_UnlockShelter",
+                    "Trigger": "DayStarted",
+                    "Condition": "PLAYER_FARMING_LEVEL Current 3, RELATIONSHIP_POINTS Robin 1000, !PLAYER_HAS_MAIL Current JavCombita.ELE_RobinShelterMail",
+                    "Actions": ["AddMail Current JavCombita.ELE_RobinShelterMail"]
+                }
+            }
+        },
+
+        // 3. Vender la receta SOLO si tiene la carta
+        {
+            "LogName": "Add Recipe to Robin (Conditional)",
+            "Action": "EditData",
+            "Target": "Data/Shops",
+            "TargetField": ["Carpenter", "Items"],
+            "Entries": {
+                "JavCombita.ELE_LadybugShelter_Recipe": {
+                    "Id": "JavCombita.ELE_LadybugShelter_Recipe",
+                    "ItemId": "JavCombita.ELE_LadybugShelter", 
+                    "IsRecipe": true, 
+                    "Price": 3000,
+                    "AvailableCondition": "PLAYER_HAS_MAIL JavCombita.ELE_RobinShelterMail" 
+                }
             }
         }
     ]

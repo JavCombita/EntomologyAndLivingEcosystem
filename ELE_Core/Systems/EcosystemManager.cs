@@ -154,7 +154,7 @@ namespace ELE.Core.Systems
 
         private bool IsProtectedByLadybugs(GameLocation location, Vector2 targetTile)
         {
-            int radius = 4;
+            int radius = 6;
             // Optimización: Escanear área pequeña en busca del objeto protector
             for (int x = -radius; x <= radius; x++)
             {
