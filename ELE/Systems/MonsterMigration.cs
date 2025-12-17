@@ -6,7 +6,6 @@ using StardewModdingAPI;
 using StardewValley;
 using StardewValley.Monsters;
 using StardewValley.Locations;
-using StardewValley.Characters; // <--- AGREGADO: Necesario para 'Horse' y 'Pet'
 
 namespace ELE.Core.Systems
 {
@@ -30,7 +29,7 @@ namespace ELE.Core.Systems
             IsInvasionActive = false;
             if (!this.Mod.Config.EnableMonsterMigration) return;
 
-            // --- 1. CHEQUEO DE EVENTOS ---
+            // 1. CHEQUEO DE EVENTOS
             if (Game1.isFestival() || Game1.eventUp || Game1.weddingToday) 
                 return;
 
@@ -40,41 +39,40 @@ namespace ELE.Core.Systems
             double chance = 0.10 + (Game1.player.CombatLevel * 0.01);
             if (Game1.random.NextDouble() < chance)
             {
-                TriggerTownInvasion();
+                TriggerFarmInvasion();
             }
         }
 
-        public void ForceTownInvasion()
+        /// <summary>
+        /// DEBUG COMMAND: Called by 'ele_invasion' command.
+        /// </summary>
+        public void ForceInvasion()
         {
-            // if (Game1.isFestival() || Game1.eventUp) { this.Mod.Monitor.Log("Cannot invade during event.", LogLevel.Warn); return; }
+            // Nota: Recuerda actualizar tu ModEntry.cs para llamar a este método (ForceInvasion)
+            // en lugar de ForceTownInvasion.
+            
+            GameLocation farm = Game1.getFarm();
+            if (farm == null) return;
 
-            GameLocation town = Game1.getLocationFromName("Town");
-            if (town == null) return;
-
-            this.Mod.Monitor.Log("⚔️ DEBUG: Forcing monster invasion in Town...", LogLevel.Warn);
-            TriggerTownInvasion();
+            this.Mod.Monitor.Log("⚔️ DEBUG: Forcing monster invasion on FARM...", LogLevel.Warn);
+            TriggerFarmInvasion();
         }
 
-        private void TriggerTownInvasion()
+        private void TriggerFarmInvasion()
         {
-            GameLocation town = Game1.getLocationFromName("Town");
-            if (town == null) return;
+            GameLocation farm = Game1.getFarm();
+            if (farm == null) return;
 
             IsInvasionActive = true;
-            this.Mod.Monitor.Log("⚠️ INVASION STARTED: The horde is approaching!", LogLevel.Warn);
+            this.Mod.Monitor.Log("⚠️ FARM INVASION STARTED!", LogLevel.Warn);
             
-            Game1.addHUDMessage(new HUDMessage(this.Mod.Helper.Translation.Get("notification.town_invasion"), 2));
+            Game1.addHUDMessage(new HUDMessage("The monsters are attacking your farm!", 2)); // Puedes traducir esto
             Game1.playSound("shadowpeep");
 
-            // --- 2. EVACUAR ALDEANOS ---
-            EvacuateVillagers(town);
-
-            // Rally Point: Saloon Door
-            Point saloonDoor = town.doors.Keys.FirstOrDefault(d => town.doors[d] == "Saloon");
-            if (saloonDoor != Point.Zero)
-            {
-                InvasionRallyPoint = new Vector2(saloonDoor.X, saloonDoor.Y);
-            }
+            // RALLY POINT: La puerta de la casa
+            // Los monstruos se agruparán en la entrada de tu casa si no te encuentran.
+            Point farmhouseEntry = farm.GetMainFarmHouseEntry();
+            InvasionRallyPoint = new Vector2(farmhouseEntry.X, farmhouseEntry.Y);
 
             // --- DIFICULTAD DINÁMICA ---
             int combatLevel = Game1.player.CombatLevel;
@@ -85,48 +83,24 @@ namespace ELE.Core.Systems
 
             switch (difficulty)
             {
-                case "Easy":
-                    minMonsters = 3; maxMonsters = 5 + combatLevel; break;
-                case "Medium":
-                    minMonsters = 5; maxMonsters = 7 + (int)(combatLevel * 1.5f); break;
-                case "Hard":
-                    minMonsters = 8; maxMonsters = 10 + (combatLevel * 2); break;
-                case "VeryHard":
-                    minMonsters = 12; maxMonsters = 15 + (combatLevel * 3); break;
-                default:
-                    minMonsters = 5; maxMonsters = 7 + (int)(combatLevel * 1.5f); break;
+                case "Easy": minMonsters = 3; maxMonsters = 5 + combatLevel; break;
+                case "Medium": minMonsters = 5; maxMonsters = 7 + (int)(combatLevel * 1.5f); break;
+                case "Hard": minMonsters = 8; maxMonsters = 10 + (combatLevel * 2); break;
+                case "VeryHard": minMonsters = 12; maxMonsters = 15 + (combatLevel * 3); break;
+                default: minMonsters = 5; maxMonsters = 7 + (int)(combatLevel * 1.5f); break;
             }
 
             int monsterCount = Game1.random.Next(minMonsters, maxMonsters + 1); 
+            // ---------------------------
+
             RefreshSpawnableMonsters();
 
             int spawnedCount = 0;
             for (int i = 0; i < monsterCount; i++)
             {
-                if (SpawnRandomMonster(town)) spawnedCount++;
+                if (SpawnRandomMonster(farm)) spawnedCount++;
             }
-            this.Mod.Monitor.Log($"⚔️ Invasion Status: {spawnedCount}/{monsterCount} monsters spawned.", LogLevel.Info);
-        }
-
-        private void EvacuateVillagers(GameLocation town)
-        {
-            GameLocation saloon = Game1.getLocationFromName("Saloon");
-            if (saloon == null) return;
-
-            this.Mod.Monitor.Log("📢 Evacuating villagers to the Saloon...", LogLevel.Info);
-
-            var charactersInTown = town.characters.ToList();
-
-            foreach (NPC npc in charactersInTown)
-            {
-                // Ahora sí reconoce Horse y Pet gracias al using StardewValley.Characters
-                if (npc is Monster || npc is Horse || npc is Pet) continue;
-
-                Game1.warpCharacter(npc, "Saloon", new Vector2(15 + Game1.random.Next(-3, 3), 18 + Game1.random.Next(-2, 2)));
-                
-                npc.CurrentDialogue.Clear();
-                npc.showTextAboveHead("!"); 
-            }
+            this.Mod.Monitor.Log($"⚔️ Invasion Status: {spawnedCount}/{monsterCount} monsters spawned on Farm.", LogLevel.Info);
         }
 
         private void RefreshSpawnableMonsters()
@@ -158,7 +132,6 @@ namespace ELE.Core.Systems
                     }
                 }
             }
-
             if (CachedMonsterList.Count == 0) CachedMonsterList.Add("Green Slime");
         }
 
@@ -176,7 +149,7 @@ namespace ELE.Core.Systems
             {
                 monster.focusedOnFarmers = true; 
                 location.characters.Add(monster);
-                this.Mod.Monitor.Log($"Spawned {monster.Name} at Town {spawnTile}.", LogLevel.Trace);
+                this.Mod.Monitor.Log($"Spawned {monster.Name} at {spawnTile}.", LogLevel.Trace);
                 return true;
             }
             return false;
@@ -186,7 +159,7 @@ namespace ELE.Core.Systems
         {
             Vector2 position = tile * 64f;
             
-            // 1. Lógica Vanilla
+            // 1. INTENTO POR NOMBRE
             if (name.Contains("Slime") || name.Contains("Jelly")) { var m = new GreenSlime(position, 0); m.Name = name; return m; }
             if (name.Contains("Bat") || name.Contains("Frost Bat") || name.Contains("Lava Bat")) return new Bat(position, 0) { Name = name }; 
             if (name.Contains("Bug") || name.Contains("Fly")) return new Bug(position, 0); 
@@ -200,7 +173,7 @@ namespace ELE.Core.Systems
             if (name.Contains("Serpent")) return new Serpent(position);
             if (name.Contains("Dust")) return new DustSpirit(position);
 
-            // 2. Smart Fallback (Mods)
+            // 2. SMART FALLBACK (MODS)
             if (MonsterDataCache != null && MonsterDataCache.TryGetValue(name, out string rawData))
             {
                 string[] fields = rawData.Split('/');
@@ -210,7 +183,7 @@ namespace ELE.Core.Systems
                     return new RockGolem(position) { Name = name };
             }
 
-            // 3. Fallback
+            // 3. FALLBACK FINAL
             var fallback = new GreenSlime(position, 0);
             fallback.Name = name;
             return fallback;
@@ -222,16 +195,13 @@ namespace ELE.Core.Systems
             int mapWidth = location.Map.Layers[0].LayerWidth;
             int mapHeight = location.Map.Layers[0].LayerHeight;
 
-            while (attempts < 50) 
+            while (attempts < 50)
             {
                 int x = Game1.random.Next(0, mapWidth);
                 int y = Game1.random.Next(0, mapHeight);
                 Vector2 tile = new Vector2(x, y);
 
-                if (IsTileValidForSpawn(location, tile))
-                {
-                    return tile;
-                }
+                if (IsTileValidForSpawn(location, tile)) return tile;
                 attempts++;
             }
             return Vector2.Zero;
@@ -239,37 +209,31 @@ namespace ELE.Core.Systems
 
         private bool IsTileValidForSpawn(GameLocation location, Vector2 tile)
         {
-            // 1. Verificar límites y agua
+            // Verificación manual robusta
             if (!location.isTileOnMap(tile)) return false;
             if (location.isWaterTile((int)tile.X, (int)tile.Y)) return false;
-
-            // 2. Verificar Colisiones Físicas (Muros, Acantilados, Edificios)
-            // Creamos un rectángulo de 64x64 en la posición del tile
-            Rectangle tileRect = new Rectangle((int)tile.X * 64, (int)tile.Y * 64, 64, 64);
             
-            // "false, 0, false, null" son parámetros estándar para chequear colisiones generales
-            if (location.isCollidingPosition(tileRect, Game1.viewport, false, 0, false, null)) return false;
-
-            // 3. Verificar Ocupación de Objetos
-            // ¿Hay un objeto (Cofre, Máquina, Piedra) aquí?
+            // Ocupación
             if (location.Objects.ContainsKey(tile)) return false;
-            
-            // ¿Hay un arbusto o árbol grande?
             if (location.getLargeTerrainFeatureAt((int)tile.X, (int)tile.Y) != null) return false;
-            
-            // ¿Hay un jugador parado ahí?
             if (location.isTileOccupiedByFarmer(tile) != null) return false;
 
-            // 4. Verificar si es construible/caminable (Propiedad del mapa)
-            // Esto evita que spawneen encima de decoraciones del mapa que no tienen colisión pero no son suelo válido
+            // Colisiones físicas
+            Rectangle tileRect = new Rectangle((int)tile.X * 64, (int)tile.Y * 64, 64, 64);
+            if (location.isCollidingPosition(tileRect, Game1.viewport, false, 0, false, null)) return false;
+
+            // Caminable
             if (!location.isTilePassable(new xTile.Dimensions.Location((int)tile.X, (int)tile.Y), Game1.viewport)) return false;
 
             return true;
         }
+
         public void UpdateMigratingMonsters()
         {
             if (!IsInvasionActive) return;
-            if (Game1.currentLocation == null || Game1.currentLocation.Name != "Town") return;
+            
+            // IMPORTANTE: Ahora chequeamos si estamos en la Granja
+            if (Game1.currentLocation == null || !Game1.currentLocation.IsFarm) return;
 
             foreach (var npc in Game1.currentLocation.characters)
             {
@@ -282,12 +246,14 @@ namespace ELE.Core.Systems
 
         private void ControlMonsterAI(Monster monster)
         {
+            // Atacar al jugador si está cerca
             if (Vector2.Distance(monster.Position, Game1.player.Position) < 500f)
             {
                 if (!monster.focusedOnFarmers) monster.focusedOnFarmers = true;
                 return;
             }
 
+            // Ir hacia la puerta de la Casa (Rally Point)
             if (InvasionRallyPoint.HasValue)
             {
                 Vector2 targetPixels = InvasionRallyPoint.Value * 64f;
