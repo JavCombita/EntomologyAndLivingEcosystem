@@ -62,7 +62,6 @@ namespace ELE.Core.Systems
             if (Game1.currentLocation == null || (!Game1.currentLocation.IsFarm && !Game1.currentLocation.Name.Contains("Greenhouse"))) return;
             if (Game1.eventUp || Game1.isFestival()) return;
             
-            // Invasión Natural: isForced = false
             if (Game1.random.NextDouble() < 0.05) SpawnPestNearPlayer(Game1.currentLocation, isForced: false);
         }
 
@@ -70,8 +69,6 @@ namespace ELE.Core.Systems
         {
             if (Game1.currentLocation == null) return;
             this.Monitor.Log("🐜 DEBUG: Forcing pest invasion (Ignoring nutrients)...", LogLevel.Warn);
-            
-            // Invasión Forzada: isForced = true
             SpawnPestNearPlayer(Game1.currentLocation, isForced: true);
         }
 
@@ -90,7 +87,7 @@ namespace ELE.Core.Systems
                     {
                         cropFound = true;
 
-                        // 1. CHEQUEO DE ACTIVIDAD (Si ya hay plaga, no poner otra encima)
+                        // 1. CHEQUEO DE ACTIVIDAD
                         if (IsPestActiveAt(location, targetTile)) 
                         {
                             if (isForced) this.Monitor.Log($"🐜 Debug: Pest already active at {targetTile}", LogLevel.Trace);
@@ -101,24 +98,32 @@ namespace ELE.Core.Systems
                         StardewValley.Object protector = GetProtectorShelter(location, targetTile);
                         if (protector != null)
                         {
+                            // --- RESTAURADO: LÓGICA DE CONTEO ---
+                            int currentCount = 0;
+                            if (protector.modData.TryGetValue(PestCountKey, out string countStr))
+                            {
+                                int.TryParse(countStr, out currentCount);
+                            }
+                            currentCount++;
+                            protector.modData[PestCountKey] = currentCount.ToString();
+                            // ------------------------------------
+
+                            // Efecto visual de bloqueo
+                            location.temporarySprites.Add(new TemporaryAnimatedSprite(5, targetTile * 64f, Color.Cyan) { scale = 0.5f });
+
                             if (isForced)
                             {
-                                // Si es forzado, avisamos que el Shelter lo bloqueó pero mostramos efecto de bloqueo
-                                location.temporarySprites.Add(new TemporaryAnimatedSprite(5, targetTile * 64f, Color.Cyan) { scale = 0.5f });
-                                this.Monitor.Log($"🛡️ Forced Invasion BLOCKED by Shelter at {targetTile}", LogLevel.Warn);
-                                return;
+                                this.Monitor.Log($"🛡️ Forced Invasion BLOCKED by Shelter at {targetTile}. Count: {currentCount}", LogLevel.Warn);
                             }
-                            return; // Bloqueo natural silencioso
+                            return; // Bloqueado
                         }
 
                         // 3. ATAQUE
                         SoilData soil = GetSoilDataAt(location, targetTile);
                         float dangerThreshold = 50f; 
 
-                        // CAMBIO CRÍTICO: Si es forzado (OR ||), ignoramos el nivel de Potasio
                         if (soil.Potassium < dangerThreshold || isForced)
                         {
-                            // --- GENERAR PLAGA ---
                             if (ModEntry.PestTexture != null)
                             {
                                 location.temporarySprites.Add(new VerticalPestSprite(ModEntry.PestTexture, targetTile * 64f));
@@ -144,7 +149,7 @@ namespace ELE.Core.Systems
                             else
                                 this.Monitor.Log($"🐜 PEST SPAWNED at {targetTile} (Low K: {soil.Potassium})", LogLevel.Trace);
                             
-                            return; // Solo una plaga por llamada
+                            return; 
                         }
                     }
                 }
@@ -238,8 +243,6 @@ namespace ELE.Core.Systems
             this.position = position;
             
             this.sourceRect = new Rectangle(0, 0, 16, 16);
-            
-            // CORRECCIÓN: Vector2 para la posición inicial del recorte
             this.sourceRectStartingPos = new Vector2(0f, 0f); 
             
             this.interval = 100f;          
