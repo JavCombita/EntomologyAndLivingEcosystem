@@ -41,21 +41,36 @@ namespace ELE.Core
                 this.Monitor.Log($"Failed to apply Harmony patches: {ex}", LogLevel.Error);
             }
 
-            // Eventos
+            // Eventos del Ciclo de Juego
             helper.Events.GameLoop.GameLaunched += OnGameLaunched;
             helper.Events.GameLoop.DayStarted += OnDayStarted;
             helper.Events.GameLoop.UpdateTicked += OnUpdateTicked;
             
-            // Detectar interacción con objetos
+            // Evento de Input (Clics / Toques)
             helper.Events.Input.ButtonPressed += OnButtonPressed;
+
+            // --- COMANDOS DE CONSOLA (DEBUG) ---
+            // Escribe 'ele_pest' en la consola SMAPI para forzar una plaga inmediata
+            helper.ConsoleCommands.Add("ele_pest", "Forces a pest invasion nearby.", this.OnPestCommand);
         }
 
-        // --- MANEJADOR DE CLICS (PC + ANDROID + DISTANCIA + HERRAMIENTAS) ---
+        // --- 1. MANEJADOR DE COMANDOS ---
+        private void OnPestCommand(string command, string[] args)
+        {
+            if (!Context.IsWorldReady) return;
+            this.Monitor.Log("🐜 Command received: Forcing pest invasion...", LogLevel.Warn);
+            
+            // Llama al método que creamos en EcosystemManager
+            // (Asegúrate de haber agregado 'ForcePestInvasion' en EcosystemManager.cs como vimos antes)
+            this.Ecosystem.ForcePestInvasion();
+        }
+
+        // --- 2. MANEJADOR DE CLICS (FINAL) ---
         private void OnButtonPressed(object sender, ButtonPressedEventArgs e)
         {
             if (!Context.IsWorldReady) return;
 
-            // 1. DETECCIÓN DE BOTÓN (PC + Android)
+            // A. Detección de Input (PC Clic Derecho / Android Toque)
             bool isAction = e.Button.IsActionButton();
             bool isAndroidTap = Constants.TargetPlatform == GamePlatform.Android && e.Button == SButton.MouseLeft;
 
@@ -64,41 +79,39 @@ namespace ELE.Core
             Vector2 clickedTile = e.Cursor.Tile;
             GameLocation location = Game1.currentLocation;
 
-            // 2. BUSCAR OBJETO (Lógica "Cabeza y Pies")
+            // B. Buscar Objeto (Lógica Cabeza y Pies)
             StardewValley.Object obj = location.getObjectAtTile((int)clickedTile.X, (int)clickedTile.Y);
 
             if (obj == null)
             {
-                // Si le diste al techo (vacío), revisa los pies (Y + 1)
+                // Si clickeaste el techo (aire), revisa el tile de abajo (pies)
                 obj = location.getObjectAtTile((int)clickedTile.X, (int)clickedTile.Y + 1);
             }
 
-            // 3. SI ES NUESTRO SHELTER
+            // C. Si es el Ladybug Shelter
             if (obj != null && obj.ItemId == "JavCombita.ELE_LadybugShelter")
             {
-                // --- A. CHEQUEO DE HERRAMIENTA (Axe, Pickaxe, Hoe) ---
-                // Si el jugador tiene una de estas herramientas, asumimos que quiere usarla (golpear/romper)
-                // y no leer el mensaje.
+                // --- CHEQUEO DE HERRAMIENTAS ---
+                // Si tienes Hacha, Pico o Azada, asumimos que quieres quitarlo.
+                // Salimos (return) para dejar que el juego use la herramienta.
                 Item currentItem = Game1.player.CurrentItem;
                 if (currentItem is StardewValley.Tools.Axe || 
                     currentItem is StardewValley.Tools.Pickaxe || 
-                    currentItem is StardewValley.Tools.Hoe) // <--- ¡Hoe agregado!
+                    currentItem is StardewValley.Tools.Hoe)
                 {
-                    return; // Salimos para dejar que el juego use la herramienta
+                    return; 
                 }
 
-                // --- B. CHEQUEO DE DISTANCIA ---
-                // Calculamos la distancia entre el Jugador y el Shelter.
-                // 1.5 tiles permite interactuar desde casillas adyacentes y diagonales cercanas.
+                // --- CHEQUEO DE DISTANCIA ---
+                // Solo mostrar mensaje si estás cerca (1.5 tiles = adyacente o diagonal cercana)
                 if (Vector2.Distance(Game1.player.Tile, obj.TileLocation) > 1.5f)
                 {
-                    return; // Si está muy lejos, salimos (permitiendo que el jugador camine hacia allá en Android)
+                    return; // En Android, esto hará que el personaje camine hacia el objeto
                 }
-                // -------------------------------------
 
+                // --- MOSTRAR ESTADO ---
                 string key = "JavCombita.ELE/PestCount";
                 int count = 0;
-                
                 if (obj.modData.TryGetValue(key, out string countStr))
                 {
                     int.TryParse(countStr, out count);
@@ -106,7 +119,7 @@ namespace ELE.Core
 
                 Game1.drawObjectDialogue(this.Helper.Translation.Get("message.shelter_status", new { count = count }));
                 
-                // Suprimimos el clic solo si cumplió todas las condiciones (cerca y sin herramienta peligrosa)
+                // Suprimimos el clic para evitar golpes accidentales (si no tiene herramienta de demolición)
                 this.Helper.Input.Suppress(e.Button);
             }
         }
@@ -119,29 +132,20 @@ namespace ELE.Core
             }
             
             this.Migration.CheckMigrationStatus();
-
-            // --- LÓGICA DE CORREO DE ROBIN ---
             CheckAndSendRobinMail();
         }
 
         private void CheckAndSendRobinMail()
         {
-            // ID debe coincidir EXACTAMENTE con el de content.json
             string mailId = "JavCombita.ELE_RobinShelterMail";
 
-            // 1. Si ya tiene la carta, salimos
             if (Game1.player.mailReceived.Contains(mailId) || Game1.player.mailbox.Contains(mailId)) 
                 return;
 
-            // 2. Condición: 3 Corazones con Robin (750 puntos)
-            // Nota: Un corazón = 250 puntos. 3 corazones = 750.
             if (Game1.player.getFriendshipHeartLevelForNPC("Robin") >= 3)
             {
                 Game1.player.mailbox.Add(mailId);
                 this.Monitor.Log($"📬 Requirements met! Sending '{mailId}' to player.", LogLevel.Info);
-                
-                // Opcional: Sonido de notificación si quieres ser muy detallista, 
-                // pero el juego suele sonar al despertar si hay correo.
             }
         }
 
@@ -171,11 +175,10 @@ namespace ELE.Core
                 save: () => this.Helper.WriteConfig(this.Config)
             );
 
-            configMenu.AddSectionTitle(
-                mod: this.ModManifest,
-                text: () => this.Helper.Translation.Get("config.section.general")
-            );
-
+            // ... (Toda tu configuración de GMCM sigue aquí igual que antes) ...
+            
+            configMenu.AddSectionTitle(mod: this.ModManifest, text: () => this.Helper.Translation.Get("config.section.general"));
+            
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
                 name: () => this.Helper.Translation.Get("config.enableInvasions"),
@@ -211,10 +214,7 @@ namespace ELE.Core
                 min: 5, max: 100
             );
 
-            configMenu.AddSectionTitle(
-                mod: this.ModManifest,
-                text: () => this.Helper.Translation.Get("config.section.nutrients")
-            );
+            configMenu.AddSectionTitle(mod: this.ModManifest, text: () => this.Helper.Translation.Get("config.section.nutrients"));
 
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
@@ -233,10 +233,7 @@ namespace ELE.Core
                 min: 0.1f, max: 5.0f
             );
 
-            configMenu.AddSectionTitle(
-                mod: this.ModManifest,
-                text: () => this.Helper.Translation.Get("config.section.visuals")
-            );
+            configMenu.AddSectionTitle(mod: this.ModManifest, text: () => this.Helper.Translation.Get("config.section.visuals"));
 
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
