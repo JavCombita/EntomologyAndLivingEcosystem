@@ -126,18 +126,14 @@ namespace ELE.Core.Systems
 
                             this.Monitor.Log($"🐜 PEST ATTACK! Nutrients drained at {targetTile}", LogLevel.Warn);
 
-                            // C) CONSECUENCIA 2: MUERTE DEL CULTIVO (Probabilidad)
-                            // Si es forzado (debug) o si tienes mala suerte (30% de chance)
+                            // C) CONSECUENCIA 2: MUERTE DEL CULTIVO
                             if (isForced || Game1.random.NextDouble() < 0.30)
                             {
-                                // Sonido de daño
                                 location.playSound("cut"); 
-                                
-                                // Animación de hojas volando (como cuando usas la guadaña)
                                 Game1.createRadialDebris(location, 12, (int)targetTile.X, (int)targetTile.Y, 6, false);
 
-                                // Destruir el cultivo (true = animación de muerte)
-                                dirt.destroyCrop(targetTile, true, location);
+                                // CORRECCIÓN AQUÍ: destroyCrop en 1.6 solo necesita (bool showAnimation)
+                                dirt.destroyCrop(true);
                                 
                                 this.Monitor.Log("💀 CROP DESTROYED by Pest!", LogLevel.Alert);
                             }
