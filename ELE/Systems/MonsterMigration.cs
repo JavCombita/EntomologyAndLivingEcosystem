@@ -16,6 +16,9 @@ namespace ELE.Core.Systems
         private Vector2? InvasionRallyPoint = null;
         private List<string> CachedMonsterList = new List<string>();
 
+        // NUEVO: Cache para consultar datos de mobs de otros mods rápidamente
+        private Dictionary<string, string> MonsterDataCache;
+
         public MonsterMigration(ModEntry mod)
         {
             this.Mod = mod;
@@ -113,10 +116,13 @@ namespace ELE.Core.Systems
         private void RefreshSpawnableMonsters()
         {
             CachedMonsterList.Clear();
-            var monsterData = Game1.content.Load<Dictionary<string, string>>("Data/Monsters");
+            
+            // NUEVO: Cargamos los datos en la variable de clase para usarlos en el Factory
+            MonsterDataCache = Game1.content.Load<Dictionary<string, string>>("Data/Monsters");
+            
             int playerLevel = Game1.player.CombatLevel;
 
-            foreach (var kvp in monsterData)
+            foreach (var kvp in MonsterDataCache)
             {
                 string name = kvp.Key;
                 string rawData = kvp.Value;
@@ -167,7 +173,7 @@ namespace ELE.Core.Systems
         {
             Vector2 position = tile * 64f;
             
-            // Factory
+            // 1. INTENTO POR NOMBRE (Lógica Explícita Vanilla)
             if (name.Contains("Slime") || name.Contains("Jelly")) 
             {
                 var slime = new GreenSlime(position, 0); 
@@ -208,7 +214,30 @@ namespace ELE.Core.Systems
             
             if (name.Contains("Serpent"))
                 return new Serpent(position);
+            
+            if (name.Contains("Dust")) 
+                return new DustSpirit(position);
 
+            // 2. INTENTO POR DATOS (Smart Fallback para Mods)
+            // Si el nombre no coincide con nada conocido, consultamos los datos para ver si vuela.
+            if (MonsterDataCache != null && MonsterDataCache.TryGetValue(name, out string rawData))
+            {
+                string[] fields = rawData.Split('/');
+                // El campo 4 en Data/Monsters es "isGlider" (volador)
+                // Formato típico: HP/Damage/MinCoins/MaxCoins/Glider/...
+                if (fields.Length > 4 && bool.TryParse(fields[4], out bool isGlider) && isGlider)
+                {
+                    // Es un volador desconocido -> Usamos IA de Bat
+                    return new Bat(position, 0) { Name = name };
+                }
+                else
+                {
+                    // Es terrestre desconocido -> Usamos IA de RockGolem (camina hacia el jugador)
+                    return new RockGolem(position) { Name = name };
+                }
+            }
+
+            // 3. FALLBACK FINAL (Si todo lo demás falla)
             var fallback = new GreenSlime(position, 0);
             fallback.Name = name;
             return fallback;
