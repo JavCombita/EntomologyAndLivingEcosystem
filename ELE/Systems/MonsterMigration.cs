@@ -6,6 +6,7 @@ using StardewModdingAPI;
 using StardewValley;
 using StardewValley.Monsters;
 using StardewValley.Locations;
+using StardewValley.Characters; // <--- AGREGADO: Necesario para 'Horse' y 'Pet'
 
 namespace ELE.Core.Systems
 {
@@ -29,11 +30,9 @@ namespace ELE.Core.Systems
             IsInvasionActive = false;
             if (!this.Mod.Config.EnableMonsterMigration) return;
 
-            // --- 1. CHEQUEO DE EVENTOS (NUEVO) ---
-            // Si hay festival, evento (cinemática) o boda, cancelamos.
+            // --- 1. CHEQUEO DE EVENTOS ---
             if (Game1.isFestival() || Game1.eventUp || Game1.weddingToday) 
                 return;
-            // -------------------------------------
 
             if (Game1.stats.DaysPlayed < this.Mod.Config.DaysBeforeTownInvasion) return;
 
@@ -45,21 +44,14 @@ namespace ELE.Core.Systems
             }
         }
 
-        /// <summary>
-        /// DEBUG COMMAND: Forces an invasion immediately in the Town.
-        /// Called by 'ele_invasion' command.
-        /// </summary>
         public void ForceTownInvasion()
         {
-            // Opcional: Descomenta esto si quieres que el comando también respete los eventos
             // if (Game1.isFestival() || Game1.eventUp) { this.Mod.Monitor.Log("Cannot invade during event.", LogLevel.Warn); return; }
 
             GameLocation town = Game1.getLocationFromName("Town");
             if (town == null) return;
 
             this.Mod.Monitor.Log("⚔️ DEBUG: Forcing monster invasion in Town...", LogLevel.Warn);
-            
-            // Bypass probability checks and trigger directly
             TriggerTownInvasion();
         }
 
@@ -74,9 +66,8 @@ namespace ELE.Core.Systems
             Game1.addHUDMessage(new HUDMessage(this.Mod.Helper.Translation.Get("notification.town_invasion"), 2));
             Game1.playSound("shadowpeep");
 
-            // --- 2. EVACUAR ALDEANOS (RESTAURADO) ---
+            // --- 2. EVACUAR ALDEANOS ---
             EvacuateVillagers(town);
-            // ----------------------------------------
 
             // Rally Point: Saloon Door
             Point saloonDoor = town.doors.Keys.FirstOrDefault(d => town.doors[d] == "Saloon");
@@ -95,30 +86,18 @@ namespace ELE.Core.Systems
             switch (difficulty)
             {
                 case "Easy":
-                    minMonsters = 3;
-                    maxMonsters = 5 + combatLevel;
-                    break;
+                    minMonsters = 3; maxMonsters = 5 + combatLevel; break;
                 case "Medium":
-                    minMonsters = 5;
-                    maxMonsters = 7 + (int)(combatLevel * 1.5f);
-                    break;
+                    minMonsters = 5; maxMonsters = 7 + (int)(combatLevel * 1.5f); break;
                 case "Hard":
-                    minMonsters = 8;
-                    maxMonsters = 10 + (combatLevel * 2);
-                    break;
+                    minMonsters = 8; maxMonsters = 10 + (combatLevel * 2); break;
                 case "VeryHard":
-                    minMonsters = 12;
-                    maxMonsters = 15 + (combatLevel * 3);
-                    break;
+                    minMonsters = 12; maxMonsters = 15 + (combatLevel * 3); break;
                 default:
-                    minMonsters = 5;
-                    maxMonsters = 7 + (int)(combatLevel * 1.5f);
-                    break;
+                    minMonsters = 5; maxMonsters = 7 + (int)(combatLevel * 1.5f); break;
             }
 
             int monsterCount = Game1.random.Next(minMonsters, maxMonsters + 1); 
-            // ---------------------------
-
             RefreshSpawnableMonsters();
 
             int spawnedCount = 0;
@@ -129,9 +108,6 @@ namespace ELE.Core.Systems
             this.Mod.Monitor.Log($"⚔️ Invasion Status: {spawnedCount}/{monsterCount} monsters spawned.", LogLevel.Info);
         }
 
-        /// <summary>
-        /// Mueve a los NPCs del Pueblo al Saloon para protegerlos.
-        /// </summary>
         private void EvacuateVillagers(GameLocation town)
         {
             GameLocation saloon = Game1.getLocationFromName("Saloon");
@@ -139,18 +115,15 @@ namespace ELE.Core.Systems
 
             this.Mod.Monitor.Log("📢 Evacuating villagers to the Saloon...", LogLevel.Info);
 
-            // Copiamos la lista para iterar seguros
             var charactersInTown = town.characters.ToList();
 
             foreach (NPC npc in charactersInTown)
             {
-                // No mover monstruos, caballos o mascotas
+                // Ahora sí reconoce Horse y Pet gracias al using StardewValley.Characters
                 if (npc is Monster || npc is Horse || npc is Pet) continue;
 
-                // Teletransportar al Saloon (Coordenadas aproximadas 15,18 con variación)
                 Game1.warpCharacter(npc, "Saloon", new Vector2(15 + Game1.random.Next(-3, 3), 18 + Game1.random.Next(-2, 2)));
                 
-                // Resetear diálogo y mostrar alerta
                 npc.CurrentDialogue.Clear();
                 npc.showTextAboveHead("!"); 
             }
@@ -170,27 +143,22 @@ namespace ELE.Core.Systems
 
                 if (fields.Length < 2) continue;
 
-                int hp = int.Parse(fields[0]);
-                int damage = int.Parse(fields[1]);
-                
-                // Filtro de dificultad
-                int difficultyScore = (hp / 20) + damage;
-                int maxDifficultyAllowed = (playerLevel + 1) * 25; // Le subí un poco el margen (de 20 a 25) para más variedad
-
-                if (difficultyScore <= maxDifficultyAllowed)
+                if (int.TryParse(fields[0], out int hp) && int.TryParse(fields[1], out int damage))
                 {
-                    int weight = 1;
-                    if (difficultyScore > maxDifficultyAllowed / 2) weight = 3; 
-                    if (difficultyScore < maxDifficultyAllowed / 10) weight = 1;
+                    int difficultyScore = (hp / 20) + damage;
+                    int maxDifficultyAllowed = (playerLevel + 1) * 25; 
 
-                    for(int w=0; w < weight; w++)
+                    if (difficultyScore <= maxDifficultyAllowed)
                     {
-                        CachedMonsterList.Add(name);
+                        int weight = 1;
+                        if (difficultyScore > maxDifficultyAllowed / 2) weight = 3; 
+                        if (difficultyScore < maxDifficultyAllowed / 10) weight = 1;
+
+                        for(int w=0; w < weight; w++) CachedMonsterList.Add(name);
                     }
                 }
             }
 
-            // Fallback si la lista queda vacía
             if (CachedMonsterList.Count == 0) CachedMonsterList.Add("Green Slime");
         }
 
@@ -218,36 +186,31 @@ namespace ELE.Core.Systems
         {
             Vector2 position = tile * 64f;
             
-            // 1. INTENTO POR NOMBRE (Lógica Vanilla)
-            if (name.Contains("Slime") || name.Contains("Jelly")) 
-            {
-                var slime = new GreenSlime(position, 0); slime.Name = name; return slime;
-            }
-            if (name.Contains("Bat") || name.Contains("Frost Bat") || name.Contains("Lava Bat")) 
-                return new Bat(position, 0) { Name = name }; 
+            // 1. Lógica Vanilla
+            if (name.Contains("Slime") || name.Contains("Jelly")) { var m = new GreenSlime(position, 0); m.Name = name; return m; }
+            if (name.Contains("Bat") || name.Contains("Frost Bat") || name.Contains("Lava Bat")) return new Bat(position, 0) { Name = name }; 
             if (name.Contains("Bug") || name.Contains("Fly")) return new Bug(position, 0); 
             if (name.Contains("Grub")) return new Grub(position, true); 
             if (name.Contains("Ghost")) return new Ghost(position);
             if (name.Contains("Skeleton")) return new Skeleton(position);
-            if (name.Contains("Crab")) { var crab = new RockCrab(position); crab.Name = name; return crab; }
+            if (name.Contains("Crab")) { var m = new RockCrab(position); m.Name = name; return m; }
             if (name.Contains("Golem") || name.Contains("Stone")) return new RockGolem(position);
             if (name.Contains("Shadow") || name.Contains("Brute")) return new ShadowBrute(position);
             if (name.Contains("Shaman")) return new ShadowShaman(position);
             if (name.Contains("Serpent")) return new Serpent(position);
             if (name.Contains("Dust")) return new DustSpirit(position);
 
-            // 2. INTENTO POR DATOS (Smart Fallback para Mods)
+            // 2. Smart Fallback (Mods)
             if (MonsterDataCache != null && MonsterDataCache.TryGetValue(name, out string rawData))
             {
                 string[] fields = rawData.Split('/');
-                // El campo 4 es "isGlider"
                 if (fields.Length > 4 && bool.TryParse(fields[4], out bool isGlider) && isGlider)
                     return new Bat(position, 0) { Name = name };
                 else
-                    return new RockGolem(position) { Name = name }; // RockGolem es bueno persiguiendo
+                    return new RockGolem(position) { Name = name };
             }
 
-            // 3. FALLBACK FINAL
+            // 3. Fallback
             var fallback = new GreenSlime(position, 0);
             fallback.Name = name;
             return fallback;
@@ -259,7 +222,7 @@ namespace ELE.Core.Systems
             int mapWidth = location.Map.Layers[0].LayerWidth;
             int mapHeight = location.Map.Layers[0].LayerHeight;
 
-            while (attempts < 50) // Subimos intentos a 50
+            while (attempts < 50) 
             {
                 int x = Game1.random.Next(0, mapWidth);
                 int y = Game1.random.Next(0, mapHeight);
@@ -276,12 +239,28 @@ namespace ELE.Core.Systems
 
         private bool IsTileValidForSpawn(GameLocation location, Vector2 tile)
         {
-            // --- 3. CORRECCIÓN DE SPAWN ---
-            // Usamos este método nativo que es mucho más fiable que calcular colisiones manuales
-            if (!location.isTileLocationTotallyClearAndPlaceable(tile)) return false;
+            // --- CORRECCIÓN: Volvemos a la verificación manual robusta ---
+            
+            // 1. Límites del mapa
+            if (!location.isTileOnMap(tile)) return false;
 
+            // 2. Agua
             if (location.isWaterTile((int)tile.X, (int)tile.Y)) return false;
+
+            // 3. Ocupación Manual
+            // Objetos (Cofres, Máquinas)
+            if (location.Objects.ContainsKey(tile)) return false;
+            // Arbustos
+            if (location.getLargeTerrainFeatureAt((int)tile.X, (int)tile.Y) != null) return false;
+            // Jugadores
             if (location.isTileOccupiedByFarmer(tile) != null) return false;
+
+            // 4. Colisiones (Muros, Acantilados)
+            // Usamos un rectángulo estándar de 64x64
+            Rectangle tileRect = new Rectangle((int)tile.X * 64, (int)tile.Y * 64, 64, 64);
+            
+            // Check de colisión estándar que respeta la versión actual de Stardew
+            if (location.isCollidingPosition(tileRect, Game1.viewport, false, 0, false, null)) return false;
 
             return true;
         }
@@ -302,14 +281,12 @@ namespace ELE.Core.Systems
 
         private void ControlMonsterAI(Monster monster)
         {
-            // Atacar al jugador si está cerca
             if (Vector2.Distance(monster.Position, Game1.player.Position) < 500f)
             {
                 if (!monster.focusedOnFarmers) monster.focusedOnFarmers = true;
                 return;
             }
 
-            // Ir al Rally Point (Saloon)
             if (InvasionRallyPoint.HasValue)
             {
                 Vector2 targetPixels = InvasionRallyPoint.Value * 64f;
