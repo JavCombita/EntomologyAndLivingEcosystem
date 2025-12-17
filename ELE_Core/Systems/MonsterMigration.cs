@@ -184,23 +184,34 @@ namespace ELE.Core.Systems
         }
 
         /// <summary>
-        /// Custom robust check for Stardew 1.6 compatibility
+        /// Custom robust check for Stardew 1.6 compatibility.
+        /// Replaces deprecated methods with manual checks.
         /// </summary>
         private bool IsTileValidForSpawn(GameLocation location, Vector2 tile)
         {
-            // 1. Check basic map bounds
+            // 1. Basic Map Bounds
             if (!location.isTileOnMap(tile)) return false;
 
             // 2. Check for Water
             if (location.isWaterTile((int)tile.X, (int)tile.Y)) return false;
 
-            // 3. Check for Occupancy (Furniture, Characters, Machines)
-            if (location.IsTileOccupied(tile)) return false;
+            // 3. Manual Occupancy Check (Replaces IsTileOccupied)
+            // A. Check for Objects (Chests, Machines, Furniture)
+            if (location.Objects.ContainsKey(tile)) return false;
+            
+            // B. Check for Large Terrain Features (Bushes, Boulders)
+            if (location.getLargeTerrainFeatureAt((int)tile.X, (int)tile.Y) != null) return false;
+            
+            // C. Check for Players
+            if (location.isTileOccupiedByFarmer(tile) != null) return false;
 
-            // 4. Check for Collisions (Walls, Cliffs, Fences)
-            // We create a rectangle for the tile to check collision against the map
+            // 4. Check for Collisions (Walls, Fences, Cliffs)
             Rectangle tileRect = new Rectangle((int)tile.X * 64, (int)tile.Y * 64, 64, 64);
-            if (location.isCollidingPosition(tileRect, Game1.viewport, true, 0, false)) return false;
+            
+            // FIX: isCollidingPosition signature update for 1.6
+            // Old (1.5): (rect, viewport, isFarmer, damage, glider) -> 5 args
+            // New (1.6): (rect, viewport, isFarmer, damage, glider, character) -> 6 args (Character is mandatory, can be null)
+            if (location.isCollidingPosition(tileRect, Game1.viewport, false, 0, false, null)) return false;
 
             return true;
         }
