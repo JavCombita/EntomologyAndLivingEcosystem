@@ -16,8 +16,8 @@
   </ItemGroup>
   
   <ItemGroup>
-    <None Include="assets/**">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    <None Include="assets\ladybug_shelter_anim.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
