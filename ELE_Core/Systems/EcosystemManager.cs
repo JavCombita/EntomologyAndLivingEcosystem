@@ -111,7 +111,8 @@ namespace ELE.Core.Systems
 
         private void SpawnPestNearPlayer(GameLocation location)
         {
-            Vector2 playerPos = Game1.player.getTileLocation();
+            // FIX 1: getTileLocation() -> Tile
+            Vector2 playerPos = Game1.player.Tile;
             
             // Find a valid crop tile near the player
             for (int x = -5; x <= 5; x++)
@@ -122,20 +123,15 @@ namespace ELE.Core.Systems
                     
                     if (location.terrainFeatures.TryGetValue(targetTile, out TerrainFeature tf) && tf is HoeDirt dirt && dirt.crop != null)
                     {
-                        // Found a crop! Check soil health
                         SoilData soil = GetSoilDataAt(location, targetTile);
 
-                        // Pests are attracted to WEAK soil (Low Potassium/K)
                         if (soil.Potassium < 30f)
                         {
-                            // Trigger visual effect (Emote or Particle)
                             Game1.addHUDMessage(new HUDMessage(this.Mod.Helper.Translation.Get("notification.invasion"), 3));
                             
-                            // Visual: Fly animation (using standard game sprites for now, ID 12 is a fly in some sheets, or use a generic one)
-                            // Using a temporary sprite to simulate a bug eating the crop
                             location.temporarySprites.Add(new TemporaryAnimatedSprite(
                                 textureName: "LooseSprites\\Cursors",
-                                sourceRect: new Rectangle(381, 1342, 10, 10), // Example coordinate for a bug-like speck
+                                sourceRect: new Rectangle(381, 1342, 10, 10),
                                 position: targetTile * 64f,
                                 flipped: false,
                                 alphaFade: 0f,
@@ -148,7 +144,6 @@ namespace ELE.Core.Systems
                                 animationLength = 4
                             });
                             
-                            // Break loop to spawn only one pest group at a time
                             return;
                         }
                     }
