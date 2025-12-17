@@ -1,0 +1,43 @@
+{
+    "Format": "2.0.0",
+    "Changes": [
+        {
+            "LogName": "Load Analyzer Texture",
+            "Action": "Load",
+            "Target": "Mods/JavCombita/ELE/Analyzer",
+            "FromFile": "assets/soil_analyzer.png"
+        },
+        {
+            "LogName": "Define Soil Analyzer Item",
+            "Action": "EditData",
+            "Target": "Data/Objects",
+            "Entries": {
+                "JavCombita.ELE_SoilAnalyzer": {
+                    "Name": "Soil Analyzer",
+                    "DisplayName": "{{i18n:item.analyzer.name}}",
+                    "Description": "{{i18n:item.analyzer.description}}",
+                    "Type": "Basic",
+                    "Category": -99,
+                    "Price": 500,
+                    "Texture": "Mods/JavCombita/ELE/Analyzer", 
+                    "SpriteIndex": 0,
+                    "ContextTags": ["not_giftable", "color_yellow"]
+                }
+            }
+        },
+        {
+            "LogName": "Add to Pierre's Shop",
+            "Action": "EditData",
+            "Target": "Data/Shops",
+            "TargetField": ["Pierre", "Items"],
+            "Entries": {
+                "JavCombita.ELE_SoilAnalyzer": {
+                    "Id": "JavCombita.ELE_SoilAnalyzer",
+                    "ItemId": "JavCombita.ELE_SoilAnalyzer",
+                    "Price": 2000,
+                    "IgnoreShopPriceModifiers": true
+                }
+            }
+        }
+    ]
+}

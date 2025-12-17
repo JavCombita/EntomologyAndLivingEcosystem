@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <LangVersion>10.0</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <GamePath>$(MSBuildProjectDirectory)\Game</GamePath>
+    <EnableModDeploy>false</EnableModDeploy>
+    </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Integrations\" />
+    <Folder Include="Models\" />
+    <Folder Include="Systems\" />
+    <Folder Include="i18n\" />
+  </ItemGroup>
+
+</Project>

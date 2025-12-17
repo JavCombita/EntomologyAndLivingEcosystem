@@ -1,0 +1,11 @@
+{
+  "Name": "Entomology and Living Ecosystem (Content)",
+  "Author": "JavCombita",
+  "Version": "1.0.0",
+  "Description": "Assets and Data for ELE.",
+  "UniqueID": "JavCombita.ELE.Content",
+  "ContentPackFor": {
+    "UniqueID": "Pathoschild.ContentPatcher"
+  },
+  "UpdateKeys": []
+}
