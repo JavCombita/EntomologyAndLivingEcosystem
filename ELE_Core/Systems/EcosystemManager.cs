@@ -13,9 +13,10 @@ namespace ELE.Core.Systems
     {
         private readonly ModEntry Mod;
         private readonly IMonitor Monitor;
-        
-        // Key for storing data inside the save file securely
         private const string SoilDataKey = "JavCombita.ELE/SoilData";
+        
+        // ID que definiremos en Content Patcher
+        private const string LadybugShelterId = "JavCombita.ELE_LadybugShelter";
 
         public EcosystemManager(ModEntry mod)
         {
@@ -23,20 +24,13 @@ namespace ELE.Core.Systems
             this.Monitor = mod.Monitor;
         }
 
-        /// <summary>
-        /// Analyzes the farm, drains nutrients based on crops, and updates persistence.
-        /// Runs once per in-game day (DayStarted).
-        /// </summary>
         public void CalculateDailyNutrients()
         {
-            // Iterate over all locations to support Farm, Greenhouse, and Island
             foreach (GameLocation location in Game1.locations)
             {
                 if (!location.IsFarm && !location.Name.Contains("Greenhouse")) continue;
 
-                // Use ToList() to avoid "Collection was modified" errors if we modify the collection
                 var terrainFeatures = location.terrainFeatures.Pairs.ToList();
-
                 foreach (var pair in terrainFeatures)
                 {
                     if (pair.Value is HoeDirt dirt && dirt.crop != null)
@@ -45,65 +39,42 @@ namespace ELE.Core.Systems
                     }
                 }
             }
-            
             this.Monitor.Log("Daily soil analysis completed.", LogLevel.Trace);
         }
 
-        /// <summary>
-        /// Drains nutrients for a specific tile based on the crop growing there.
-        /// </summary>
         private void ProcessCropNutrients(GameLocation location, Vector2 tile, HoeDirt dirt)
         {
             Crop crop = dirt.crop;
-            
-            // 1. Fetch current data
             SoilData soil = GetSoilDataAt(location, tile);
-
-            // 2. Calculate Drain Factors (Configurable Multiplier)
             float multiplier = this.Mod.Config.NutrientDepletionMultiplier;
-            
-            // Logic: Crops in later stages consume more nutrients
             float stageFactor = (crop.currentPhase.Value + 1) * 0.5f;
 
-            // Simple drain logic (can be expanded for specific crop types later)
-            float nDrain = 1.5f * multiplier * stageFactor; // Nitrogen (Leaf growth)
-            float pDrain = 1.0f * multiplier * stageFactor; // Phosphorus (Root/Fruit)
-            float kDrain = 0.8f * multiplier * stageFactor; // Potassium (General health)
+            // --- Lógica de Monocultivo ---
+            // Penalización: +10% de consumo por cada cultivo idéntico vecino
+            int neighbors = GetMonocultureScore(location, tile, crop);
+            float competitionFactor = 1.0f + (neighbors * 0.1f);
 
-            // 3. Apply Drain
+            float nDrain = 1.5f * multiplier * stageFactor * competitionFactor;
+            float pDrain = 1.0f * multiplier * stageFactor * competitionFactor;
+            float kDrain = 0.8f * multiplier * stageFactor * competitionFactor;
+
             soil.Nitrogen -= nDrain;
             soil.Phosphorus -= pDrain;
             soil.Potassium -= kDrain;
 
-            // 4. Clamp values (Cannot go below 0 or above 100)
             soil.Nitrogen = Math.Clamp(soil.Nitrogen, 0f, 100f);
             soil.Phosphorus = Math.Clamp(soil.Phosphorus, 0f, 100f);
             soil.Potassium = Math.Clamp(soil.Potassium, 0f, 100f);
 
-            // 5. Consequence: Poor soil affects crop?
-            // If Nitrogen is critical (< 10%), chance to stop growing or attract pests
-            if (soil.Nitrogen < 10f && Game1.random.NextDouble() < 0.3)
-            {
-                 // Visual indicator of poor soil (brown particles)
-                 // We don't kill the crop to be player-friendly, but we mark it visually
-                 // location.temporarySprites.Add(...) could go here
-            }
-
-            // 6. Save Data back to the Tile
             SaveSoilDataAt(location, tile, soil);
         }
 
-        /// <summary>
-        /// Runs periodically (every second) to simulate pest invasions.
-        /// </summary>
         public void UpdatePests()
         {
-            // Only simulate if player is on a farm-like map
             if (Game1.currentLocation == null || (!Game1.currentLocation.IsFarm && !Game1.currentLocation.Name.Contains("Greenhouse"))) 
                 return;
 
-            // Very low chance per second to trigger a "Mini Invasion" nearby
-            if (Game1.random.NextDouble() < 0.01) // 1% chance per second
+            if (Game1.random.NextDouble() < 0.01) // 1% chance per second check
             {
                 SpawnPestNearPlayer(Game1.currentLocation);
             }
@@ -111,10 +82,9 @@ namespace ELE.Core.Systems
 
         private void SpawnPestNearPlayer(GameLocation location)
         {
-            // FIX 1: getTileLocation() -> Tile
+            // Fix para Stardew 1.6 (.Tile en vez de getTileLocation)
             Vector2 playerPos = Game1.player.Tile;
             
-            // Find a valid crop tile near the player
             for (int x = -5; x <= 5; x++)
             {
                 for (int y = -5; y <= 5; y++)
@@ -123,9 +93,18 @@ namespace ELE.Core.Systems
                     
                     if (location.terrainFeatures.TryGetValue(targetTile, out TerrainFeature tf) && tf is HoeDirt dirt && dirt.crop != null)
                     {
+                        // --- DEFENSA BIOLÓGICA ---
+                        if (IsProtectedByLadybugs(location, targetTile)) continue;
+
                         SoilData soil = GetSoilDataAt(location, targetTile);
 
-                        if (soil.Potassium < 30f)
+                        // --- RIESGO DE MONOCULTIVO ---
+                        // Si hay muchos vecinos, el cultivo se enferma más fácil (Umbral de K sube)
+                        int neighbors = GetMonocultureScore(location, targetTile, dirt.crop);
+                        float dangerThreshold = 30f + (neighbors * 5f); 
+                        // Ej: Sin vecinos, atacan si K < 30. Con 8 vecinos, atacan si K < 70.
+
+                        if (soil.Potassium < dangerThreshold)
                         {
                             Game1.addHUDMessage(new HUDMessage(this.Mod.Helper.Translation.Get("notification.invasion"), 3));
                             
@@ -143,58 +122,91 @@ namespace ELE.Core.Systems
                                 totalNumberOfLoops = 5,
                                 animationLength = 4
                             });
-                            
-                            return;
+                            return; 
                         }
                     }
                 }
             }
         }
 
-        // --- PUBLIC API FOR RENDERER & DATA ---
+        private int GetMonocultureScore(GameLocation location, Vector2 centerTile, Crop centerCrop)
+        {
+            int score = 0;
+            for (int x = -1; x <= 1; x++)
+            {
+                for (int y = -1; y <= 1; y++)
+                {
+                    if (x == 0 && y == 0) continue; 
 
-        /// <summary>
-        /// Retrieves the NPK data for a specific tile.
-        /// Reads from modData or returns default (100,100,100).
-        /// </summary>
+                    Vector2 neighborTile = new Vector2(centerTile.X + x, centerTile.Y + y);
+                    if (location.terrainFeatures.TryGetValue(neighborTile, out TerrainFeature tf) && tf is HoeDirt dirt && dirt.crop != null)
+                    {
+                        // Comparamos el índice de cosecha para saber si son la misma planta
+                        if (dirt.crop.indexOfHarvest.Value == centerCrop.indexOfHarvest.Value)
+                        {
+                            score++;
+                        }
+                    }
+                }
+            }
+            return score;
+        }
+
+        private bool IsProtectedByLadybugs(GameLocation location, Vector2 targetTile)
+        {
+            int radius = 4;
+            // Optimización: Escanear área pequeña en busca del objeto protector
+            for (int x = -radius; x <= radius; x++)
+            {
+                for (int y = -radius; y <= radius; y++)
+                {
+                    Vector2 checkTile = new Vector2(targetTile.X + x, targetTile.Y + y);
+                    if (location.Objects.TryGetValue(checkTile, out StardewValley.Object obj))
+                    {
+                        if (obj.ItemId == LadybugShelterId) return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         public SoilData GetSoilDataAt(GameLocation location, Vector2 tile)
         {
             string key = $"{SoilDataKey}_{tile.X}_{tile.Y}";
-            
             if (location.modData.TryGetValue(key, out string rawData))
-            {
                 return SoilData.FromString(rawData);
-            }
-
-            // Default: Perfect soil
             return new SoilData(); 
         }
 
-        /// <summary>
-        /// Saves the NPK data to the tile's modData.
-        /// </summary>
         public void SaveSoilDataAt(GameLocation location, Vector2 tile, SoilData data)
         {
             string key = $"{SoilDataKey}_{tile.X}_{tile.Y}";
             location.modData[key] = data.ToString();
         }
-        
-        /// <summary>
-        /// Use this when applying fertilizer to restore nutrients manually.
-        /// </summary>
-        public void RestoreNutrients(GameLocation location, Vector2 tile, float amount)
+
+        public void RestoreNutrients(GameLocation location, Vector2 tile, string fertilizerId)
         {
-             SoilData data = GetSoilDataAt(location, tile);
-             data.Nitrogen += amount;
-             data.Phosphorus += amount;
-             data.Potassium += amount;
-             
-             // Clamp max
-             data.Nitrogen = Math.Min(data.Nitrogen, 100f);
-             data.Phosphorus = Math.Min(data.Phosphorus, 100f);
-             data.Potassium = Math.Min(data.Potassium, 100f);
-             
-             SaveSoilDataAt(location, tile, data);
+            SoilData data = GetSoilDataAt(location, tile);
+            float heavyBoost = 50f;
+            float lightBoost = 10f;
+
+            switch (fertilizerId)
+            {
+                case "465": case "466": case "HyperSpeedGro":
+                    data.Nitrogen += heavyBoost; data.Phosphorus += lightBoost; data.Potassium += lightBoost; break;
+                case "368":
+                    data.Nitrogen += lightBoost; data.Phosphorus += heavyBoost; data.Potassium += lightBoost; break;
+                case "369": case "919":
+                    data.Nitrogen += lightBoost; data.Phosphorus += lightBoost; data.Potassium += heavyBoost; break;
+                default:
+                    data.Nitrogen += 20f; data.Phosphorus += 20f; data.Potassium += 20f; break;
+            }
+            data.Nitrogen = Math.Min(data.Nitrogen, 100f);
+            data.Phosphorus = Math.Min(data.Phosphorus, 100f);
+            data.Potassium = Math.Min(data.Potassium, 100f);
+            SaveSoilDataAt(location, tile, data);
+            
+            Game1.createRadialDebris(location, 12, (int)tile.X, (int)tile.Y, 6, false);
         }
     }
 }

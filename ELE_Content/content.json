@@ -26,10 +26,10 @@
             }
         },
         {
-            "LogName": "Add to Pierre's Shop",
+            "LogName": "Add to SeedShop",
             "Action": "EditData",
             "Target": "Data/Shops",
-            "TargetField": ["SeedShop", "Items"], 
+            "TargetField": ["SeedShop", "Items"],
             "Entries": {
                 "JavCombita.ELE_SoilAnalyzer": {
                     "Id": "JavCombita.ELE_SoilAnalyzer",
@@ -37,6 +37,41 @@
                     "Price": 2000,
                     "IgnoreShopPriceModifiers": true
                 }
+            }
+        },
+        {
+            "LogName": "Define Ladybug Shelter Item",
+            "Action": "EditData",
+            "Target": "Data/Objects",
+            "Entries": {
+                "JavCombita.ELE_LadybugShelter": {
+                    "Name": "Ladybug Shelter",
+                    "DisplayName": "{{i18n:item.shelter.name}}",
+                    "Description": "{{i18n:item.shelter.description}}",
+                    "Type": "Crafting",
+                    "Category": -24, 
+                    "Price": 1000,
+                    "Texture": "LooseSprites\\Cursors", 
+                    "SpriteIndex": 118, 
+                    "ContextTags": ["not_giftable"]
+                }
+            }
+        },
+        {
+            "LogName": "Add Shelter Recipe",
+            "Action": "EditData",
+            "Target": "Data/CraftingRecipes",
+            "Entries": {
+                "Ladybug Shelter": "388 50 709 10/Home/JavCombita.ELE_LadybugShelter/true/null"
+            }
+        },
+        {
+            "LogName": "Unlock Recipe Default",
+            "Action": "EditData",
+            "Target": "Data/Farmer",
+            "TargetField": ["DefaultCraftingRecipes"],
+            "Entries": {
+                "Ladybug Shelter": 1
             }
         }
     ]

@@ -3,6 +3,7 @@ using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
 using ELE.Core.Systems;
+using HarmonyLib;
 using ELE.Core.Integrations; 
 
 namespace ELE.Core
@@ -43,6 +44,22 @@ namespace ELE.Core
             {
                 this.Monitor.Log($"Error initializing systems: {ex.Message}", LogLevel.Error);
             }
+			
+			// --- HARMONY PATCHING (NUEVO) ---
+			try
+			{
+				var harmony = new Harmony(this.ModManifest.UniqueID);
+        
+				// Esta línea busca automáticamente todas las clases con [HarmonyPatch] en tu proyecto y las aplica.
+				harmony.PatchAll(); 
+        
+				this.Monitor.Log("Harmony patches applied successfully.", LogLevel.Debug);
+			}
+			catch (Exception ex)
+			{
+				this.Monitor.Log($"Failed to apply Harmony patches: {ex}", LogLevel.Error);
+			}
+			// --------------------------------
 
             // 3. Hook Events
             helper.Events.GameLoop.GameLaunched += OnGameLaunched;

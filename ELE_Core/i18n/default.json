@@ -1,34 +1,22 @@
 {
   "config.title": "Entomology & Living Ecosystem",
-  
-  // --- GMCM Sections ---
   "config.section.general": "General Settings",
   "config.section.nutrients": "Nutrient Cycle",
   "config.section.visuals": "Visuals",
-
-  // --- GMCM Options ---
   "config.enableInvasions": "Enable Pest Invasions",
   "config.enableInvasions.tooltip": "If enabled, monocultures may attract pests that damage crops.",
-  
   "config.enableMigration": "Enable Monster Migration",
   "config.enableMigration.tooltip": "If enabled, monsters will invade the town periodically.",
-  
   "config.daysBeforeInvasion": "Days Before Invasion",
   "config.daysBeforeInvasion.tooltip": "Minimum days played before monsters start invading the town.",
-  
   "config.enableNutrients": "Enable NPK Cycle",
   "config.enableNutrients.tooltip": "If enabled, crops will drain Nitrogen, Phosphorus, and Potassium from the soil.",
-  
   "config.depletionMultiplier": "Depletion Rate",
   "config.depletionMultiplier.tooltip": "Multiplier for how fast crops consume nutrients. (1.0 = Normal)",
-  
   "config.showOverlay": "Auto-Show Overlay",
   "config.showOverlay.tooltip": "If true, holding the Analyzer automatically shows the soil health colors.",
-
-  // --- HUD Notifications (Game Logic) ---
   "notification.invasion": "A swarm of pests has been spotted near your crops!",
   "notification.town_invasion": "⚠️ The horde is approaching the town! Defend the villagers!",
   
-  // --- UI / Overlay Text ---
-  "message.soil_analysis": "Soil Analysis: N:{val1}% P:{val2}% K:{val3}%"
+  "message.soil_analysis": "Soil Analysis: N:{{val1}}% P:{{val2}}% K:{{val3}}%"
 }

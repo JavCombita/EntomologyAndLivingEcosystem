@@ -1,4 +1,7 @@
 {
-    "item.analyzer.name": "Soil Analyzer",
-    "item.analyzer.description": "A high-tech device to measure NPK levels in the soil. Hold it to see soil health."
+  "item.analyzer.name": "Soil Analyzer",
+  "item.analyzer.description": "A high-tech device to measure NPK levels in the soil. Hold it to visualize soil health.",
+  
+  "item.shelter.name": "Ladybug Shelter",
+  "item.shelter.description": "A small house for beneficial insects. Protects nearby crops (4 tile radius) from pest invasions."
 }
