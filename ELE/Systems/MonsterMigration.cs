@@ -27,12 +27,27 @@ namespace ELE.Core.Systems
             if (!this.Mod.Config.EnableMonsterMigration) return;
             if (Game1.stats.DaysPlayed < this.Mod.Config.DaysBeforeTownInvasion) return;
 
-            // Probabilidad base ajustada también por dificultad implícitamente (más nivel = más invasiones)
+            // Probabilidad base ajustada por nivel
             double chance = 0.10 + (Game1.player.CombatLevel * 0.01);
             if (Game1.random.NextDouble() < chance)
             {
                 TriggerTownInvasion();
             }
+        }
+
+        /// <summary>
+        /// DEBUG COMMAND: Forces an invasion immediately in the Town.
+        /// Called by 'ele_invasion' command.
+        /// </summary>
+        public void ForceTownInvasion()
+        {
+            GameLocation town = Game1.getLocationFromName("Town");
+            if (town == null) return;
+
+            this.Mod.Monitor.Log("⚔️ DEBUG: Forcing monster invasion in Town...", LogLevel.Warn);
+            
+            // Bypass probability checks and trigger directly
+            TriggerTownInvasion();
         }
 
         private void TriggerTownInvasion()
@@ -46,19 +61,18 @@ namespace ELE.Core.Systems
             Game1.addHUDMessage(new HUDMessage(this.Mod.Helper.Translation.Get("notification.town_invasion"), 2));
             Game1.playSound("shadowpeep");
 
-            // Buscar la puerta del Saloon para que los monstruos vayan hacia allá (Meta narrativa: quieren cerveza/comida)
+            // Rally Point: Saloon Door
             Point saloonDoor = town.doors.Keys.FirstOrDefault(d => town.doors[d] == "Saloon");
             if (saloonDoor != Point.Zero)
             {
                 InvasionRallyPoint = new Vector2(saloonDoor.X, saloonDoor.Y);
             }
 
-            // --- LÓGICA DE DIFICULTAD DINÁMICA ---
+            // --- DIFICULTAD DINÁMICA ---
             int combatLevel = Game1.player.CombatLevel;
             int minMonsters = 5;
             int maxMonsters = 10;
             
-            // Protección contra nulos
             string difficulty = this.Mod.Config.InvasionDifficulty ?? "Medium";
 
             switch (difficulty)
@@ -80,14 +94,13 @@ namespace ELE.Core.Systems
                     maxMonsters = 15 + (combatLevel * 3);
                     break;
                 default:
-                    // Fallback a Medium
                     minMonsters = 5;
                     maxMonsters = 7 + (int)(combatLevel * 1.5f);
                     break;
             }
 
             int monsterCount = Game1.random.Next(minMonsters, maxMonsters + 1); 
-            // -------------------------------------
+            // ---------------------------
 
             RefreshSpawnableMonsters();
 
@@ -114,14 +127,13 @@ namespace ELE.Core.Systems
                 int hp = int.Parse(fields[0]);
                 int damage = int.Parse(fields[1]);
                 
-                // Fórmula de "Puntaje de Peligro" para no spawnear dragones nivel 10 si eres nivel 1
+                // Filtro de dificultad
                 int difficultyScore = (hp / 20) + damage;
                 int maxDifficultyAllowed = (playerLevel + 1) * 20;
 
                 if (difficultyScore <= maxDifficultyAllowed)
                 {
                     int weight = 1;
-                    // Spawnear más monstruos desafiantes, menos basura débil
                     if (difficultyScore > maxDifficultyAllowed / 2) weight = 3; 
                     if (difficultyScore < maxDifficultyAllowed / 10) weight = 1;
 
@@ -145,7 +157,7 @@ namespace ELE.Core.Systems
             
             if (monster != null)
             {
-                monster.focusedOnFarmers = true; // Agresividad activada
+                monster.focusedOnFarmers = true; 
                 location.characters.Add(monster);
                 this.Mod.Monitor.Log($"Spawned {monster.Name} at Town.", LogLevel.Trace);
             }
@@ -155,7 +167,7 @@ namespace ELE.Core.Systems
         {
             Vector2 position = tile * 64f;
             
-            // Factory Pattern compatible con Stardew 1.6
+            // Factory
             if (name.Contains("Slime") || name.Contains("Jelly")) 
             {
                 var slime = new GreenSlime(position, 0); 
@@ -214,7 +226,6 @@ namespace ELE.Core.Systems
                 int y = Game1.random.Next(0, mapHeight);
                 Vector2 tile = new Vector2(x, y);
 
-                // Verificación robusta personalizada
                 if (IsTileValidForSpawn(location, tile))
                 {
                     return tile;
@@ -224,30 +235,16 @@ namespace ELE.Core.Systems
             return Vector2.Zero;
         }
 
-        /// <summary>
-        /// Comprobación manual segura para Stardew Valley 1.6.
-        /// Reemplaza métodos obsoletos como IsTileOccupied.
-        /// </summary>
         private bool IsTileValidForSpawn(GameLocation location, Vector2 tile)
         {
-            // 1. Límites del mapa
             if (!location.isTileOnMap(tile)) return false;
-
-            // 2. Agua
             if (location.isWaterTile((int)tile.X, (int)tile.Y)) return false;
 
-            // 3. Ocupación Manual (Reemplaza IsTileOccupied)
-            // Objetos (Cofres, Máquinas)
             if (location.Objects.ContainsKey(tile)) return false;
-            // Arbustos
             if (location.getLargeTerrainFeatureAt((int)tile.X, (int)tile.Y) != null) return false;
-            // Jugadores
             if (location.isTileOccupiedByFarmer(tile) != null) return false;
 
-            // 4. Colisiones (Muros, Acantilados)
             Rectangle tileRect = new Rectangle((int)tile.X * 64, (int)tile.Y * 64, 64, 64);
-            
-            // Firma de 1.6: Requiere el argumento 'character' (null en este caso)
             if (location.isCollidingPosition(tileRect, Game1.viewport, false, 0, false, null)) return false;
 
             return true;
@@ -269,14 +266,14 @@ namespace ELE.Core.Systems
 
         private void ControlMonsterAI(Monster monster)
         {
-            // Si el jugador está cerca, atacar al jugador (prioridad máxima)
+            // Atacar al jugador si está cerca
             if (Vector2.Distance(monster.Position, Game1.player.Position) < 500f)
             {
                 if (!monster.focusedOnFarmers) monster.focusedOnFarmers = true;
                 return;
             }
 
-            // Si no, ir al Rally Point (Saloon)
+            // Ir al Rally Point (Saloon)
             if (InvasionRallyPoint.HasValue)
             {
                 Vector2 targetPixels = InvasionRallyPoint.Value * 64f;
