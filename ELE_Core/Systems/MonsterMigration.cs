@@ -27,6 +27,7 @@ namespace ELE.Core.Systems
             if (!this.Mod.Config.EnableMonsterMigration) return;
             if (Game1.stats.DaysPlayed < this.Mod.Config.DaysBeforeTownInvasion) return;
 
+            // Probabilidad base ajustada también por dificultad implícitamente (más nivel = más invasiones)
             double chance = 0.10 + (Game1.player.CombatLevel * 0.01);
             if (Game1.random.NextDouble() < chance)
             {
@@ -45,13 +46,49 @@ namespace ELE.Core.Systems
             Game1.addHUDMessage(new HUDMessage(this.Mod.Helper.Translation.Get("notification.town_invasion"), 2));
             Game1.playSound("shadowpeep");
 
+            // Buscar la puerta del Saloon para que los monstruos vayan hacia allá (Meta narrativa: quieren cerveza/comida)
             Point saloonDoor = town.doors.Keys.FirstOrDefault(d => town.doors[d] == "Saloon");
             if (saloonDoor != Point.Zero)
             {
                 InvasionRallyPoint = new Vector2(saloonDoor.X, saloonDoor.Y);
             }
 
-            int monsterCount = Game1.random.Next(5, 8 + Game1.player.CombatLevel); 
+            // --- LÓGICA DE DIFICULTAD DINÁMICA ---
+            int combatLevel = Game1.player.CombatLevel;
+            int minMonsters = 5;
+            int maxMonsters = 10;
+            
+            // Protección contra nulos
+            string difficulty = this.Mod.Config.InvasionDifficulty ?? "Medium";
+
+            switch (difficulty)
+            {
+                case "Easy":
+                    minMonsters = 3;
+                    maxMonsters = 5 + combatLevel;
+                    break;
+                case "Medium":
+                    minMonsters = 5;
+                    maxMonsters = 7 + (int)(combatLevel * 1.5f);
+                    break;
+                case "Hard":
+                    minMonsters = 8;
+                    maxMonsters = 10 + (combatLevel * 2);
+                    break;
+                case "VeryHard":
+                    minMonsters = 12;
+                    maxMonsters = 15 + (combatLevel * 3);
+                    break;
+                default:
+                    // Fallback a Medium
+                    minMonsters = 5;
+                    maxMonsters = 7 + (int)(combatLevel * 1.5f);
+                    break;
+            }
+
+            int monsterCount = Game1.random.Next(minMonsters, maxMonsters + 1); 
+            // -------------------------------------
+
             RefreshSpawnableMonsters();
 
             for (int i = 0; i < monsterCount; i++)
@@ -76,12 +113,15 @@ namespace ELE.Core.Systems
 
                 int hp = int.Parse(fields[0]);
                 int damage = int.Parse(fields[1]);
+                
+                // Fórmula de "Puntaje de Peligro" para no spawnear dragones nivel 10 si eres nivel 1
                 int difficultyScore = (hp / 20) + damage;
                 int maxDifficultyAllowed = (playerLevel + 1) * 20;
 
                 if (difficultyScore <= maxDifficultyAllowed)
                 {
                     int weight = 1;
+                    // Spawnear más monstruos desafiantes, menos basura débil
                     if (difficultyScore > maxDifficultyAllowed / 2) weight = 3; 
                     if (difficultyScore < maxDifficultyAllowed / 10) weight = 1;
 
@@ -105,7 +145,7 @@ namespace ELE.Core.Systems
             
             if (monster != null)
             {
-                monster.focusedOnFarmers = true;
+                monster.focusedOnFarmers = true; // Agresividad activada
                 location.characters.Add(monster);
                 this.Mod.Monitor.Log($"Spawned {monster.Name} at Town.", LogLevel.Trace);
             }
@@ -115,6 +155,7 @@ namespace ELE.Core.Systems
         {
             Vector2 position = tile * 64f;
             
+            // Factory Pattern compatible con Stardew 1.6
             if (name.Contains("Slime") || name.Contains("Jelly")) 
             {
                 var slime = new GreenSlime(position, 0); 
@@ -173,7 +214,7 @@ namespace ELE.Core.Systems
                 int y = Game1.random.Next(0, mapHeight);
                 Vector2 tile = new Vector2(x, y);
 
-                // FIX: Replaced broken method with custom robust check
+                // Verificación robusta personalizada
                 if (IsTileValidForSpawn(location, tile))
                 {
                     return tile;
@@ -184,33 +225,29 @@ namespace ELE.Core.Systems
         }
 
         /// <summary>
-        /// Custom robust check for Stardew 1.6 compatibility.
-        /// Replaces deprecated methods with manual checks.
+        /// Comprobación manual segura para Stardew Valley 1.6.
+        /// Reemplaza métodos obsoletos como IsTileOccupied.
         /// </summary>
         private bool IsTileValidForSpawn(GameLocation location, Vector2 tile)
         {
-            // 1. Basic Map Bounds
+            // 1. Límites del mapa
             if (!location.isTileOnMap(tile)) return false;
 
-            // 2. Check for Water
+            // 2. Agua
             if (location.isWaterTile((int)tile.X, (int)tile.Y)) return false;
 
-            // 3. Manual Occupancy Check (Replaces IsTileOccupied)
-            // A. Check for Objects (Chests, Machines, Furniture)
+            // 3. Ocupación Manual (Reemplaza IsTileOccupied)
+            // Objetos (Cofres, Máquinas)
             if (location.Objects.ContainsKey(tile)) return false;
-            
-            // B. Check for Large Terrain Features (Bushes, Boulders)
+            // Arbustos
             if (location.getLargeTerrainFeatureAt((int)tile.X, (int)tile.Y) != null) return false;
-            
-            // C. Check for Players
+            // Jugadores
             if (location.isTileOccupiedByFarmer(tile) != null) return false;
 
-            // 4. Check for Collisions (Walls, Fences, Cliffs)
+            // 4. Colisiones (Muros, Acantilados)
             Rectangle tileRect = new Rectangle((int)tile.X * 64, (int)tile.Y * 64, 64, 64);
             
-            // FIX: isCollidingPosition signature update for 1.6
-            // Old (1.5): (rect, viewport, isFarmer, damage, glider) -> 5 args
-            // New (1.6): (rect, viewport, isFarmer, damage, glider, character) -> 6 args (Character is mandatory, can be null)
+            // Firma de 1.6: Requiere el argumento 'character' (null en este caso)
             if (location.isCollidingPosition(tileRect, Game1.viewport, false, 0, false, null)) return false;
 
             return true;
@@ -232,12 +269,14 @@ namespace ELE.Core.Systems
 
         private void ControlMonsterAI(Monster monster)
         {
+            // Si el jugador está cerca, atacar al jugador (prioridad máxima)
             if (Vector2.Distance(monster.Position, Game1.player.Position) < 500f)
             {
                 if (!monster.focusedOnFarmers) monster.focusedOnFarmers = true;
                 return;
             }
 
+            // Si no, ir al Rally Point (Saloon)
             if (InvasionRallyPoint.HasValue)
             {
                 Vector2 targetPixels = InvasionRallyPoint.Value * 64f;

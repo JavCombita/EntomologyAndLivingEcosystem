@@ -115,6 +115,19 @@ namespace ELE.Core
                 getValue: () => this.Config.EnableMonsterMigration,
                 setValue: value => this.Config.EnableMonsterMigration = value
             );
+			
+			// Opción de Dificultad (Dropdown)
+            configMenu.AddTextOption(
+                mod: this.ModManifest,
+                name: () => this.Helper.Translation.Get("config.invasionDifficulty"),
+                tooltip: () => this.Helper.Translation.Get("config.invasionDifficulty.tooltip"),
+                getValue: () => this.Config.InvasionDifficulty,
+                setValue: value => this.Config.InvasionDifficulty = value,
+                // Los valores internos (código)
+                allowedValues: new string[] { "Easy", "Medium", "Hard", "VeryHard" },
+                // Cómo se ven en pantalla (Traducción)
+                formatAllowedValue: value => this.Helper.Translation.Get($"difficulty.{value.ToLower()}")
+            );
 
             // Days before invasion (Int Slider)
             configMenu.AddNumberOption(

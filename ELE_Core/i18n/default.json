@@ -18,5 +18,13 @@
   "notification.invasion": "A swarm of pests has been spotted near your crops!",
   "notification.town_invasion": "⚠️ The horde is approaching the town! Defend the villagers!",
   
-  "message.soil_analysis": "Soil Analysis: N:{{val1}}% P:{{val2}}% K:{{val3}}%"
+  "message.soil_analysis": "Soil Analysis: N:{{val1}}% P:{{val2}}% K:{{val3}}%",
+  
+  "config.invasionDifficulty": "Invasion Difficulty",
+  "config.invasionDifficulty.tooltip": "Determines the number and strength of monsters during invasions.",
+  
+  "difficulty.easy": "Easy (Relaxed)",
+  "difficulty.medium": "Medium (Balanced)",
+  "difficulty.hard": "Hard (Challenging)",
+  "difficulty.veryhard": "Very Hard (Apocalypse)"
 }

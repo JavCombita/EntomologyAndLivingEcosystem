@@ -1,30 +1,21 @@
+using System;
+
 namespace ELE.Core
 {
-    /// <summary>
-    /// The configuration model for Entomology and Living Ecosystem.
-    /// Default values are set here.
-    /// </summary>
     public class ModConfig
     {
-        // --- Pest System Settings ---
+        // ... (Otras opciones existentes) ...
+        
         public bool EnablePestInvasions { get; set; } = true;
-        
-        // --- Nutrient System Settings ---
-        public bool EnableNutrientCycle { get; set; } = true;
-        
-        // Multiplier for how fast crops consume NPK. 
-        // 1.0 = Normal, 0.5 = Slow depletion, 2.0 = Hard mode.
-        public float NutrientDepletionMultiplier { get; set; } = 1.0f; 
-
-        // --- Monster Migration Settings ---
         public bool EnableMonsterMigration { get; set; } = true;
+        public int DaysBeforeTownInvasion { get; set; } = 10;
         
-        // Minimum days played before slimes can invade the town.
-        // Prevents new players from being overwhelmed immediately.
-        public int DaysBeforeTownInvasion { get; set; } = 15;
+        // --- NUEVO ---
+        // Opciones: "Easy", "Medium", "Hard", "VeryHard"
+        public string InvasionDifficulty { get; set; } = "Medium"; 
 
-        // --- Visual Settings ---
-        // If true, the soil analyzer overlay shows automatically when holding the item.
+        public bool EnableNutrientCycle { get; set; } = true;
+        public float NutrientDepletionMultiplier { get; set; } = 1.0f;
         public bool ShowOverlayOnHold { get; set; } = true;
     }
 }

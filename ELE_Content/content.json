@@ -32,8 +32,8 @@
                     "Name": "Ladybug Shelter",
                     "DisplayName": "{{i18n:item.shelter.name}}",
                     "Description": "{{i18n:item.shelter.description}}",
-                    "Type": "Crafting",
-                    "Category": -24, 
+                    "Type": "BigCraftable", // FIX 1: Cambiado de "Crafting" a "BigCraftable" para que se coloque en el suelo correctamente
+                    "Category": -9, // FIX 2: Categoría -9 es "Big Craftable"
                     "Price": 1000,
                     "Texture": "Mods/JavCombita/ELE/Shelter", 
                     "SpriteIndex": 0, 
@@ -60,13 +60,12 @@
             "Action": "EditData",
             "Target": "Data/CraftingRecipes",
             "Entries": {
-                "Ladybug Shelter": "388 50 709 10/Home/JavCombita.ELE_LadybugShelter/true/null"
+                // FIX 3: La receta ahora dice "false" (no es legacy bigcraftable) y pide " 1" (cantidad).
+                "Ladybug Shelter": "388 50 709 10/Home/JavCombita.ELE_LadybugShelter 1/false/null"
             }
         },
         
-        // --- NUEVO SISTEMA DE DESBLOQUEO ---
-
-        // 1. Definir el contenido de la carta
+        // --- SISTEMA DE DESBLOQUEO (Igual que antes) ---
         {
             "LogName": "Add Mail Content",
             "Action": "EditData",
@@ -75,8 +74,6 @@
                 "JavCombita.ELE_RobinShelterMail": "{{i18n:mail.robin_shelter.body}}"
             }
         },
-
-        // 2. Crear la lógica para enviar la carta (Trigger)
         {
             "LogName": "Logic: Send Mail on Level 3 + Robin 4 Hearts",
             "Action": "EditData",
@@ -90,8 +87,6 @@
                 }
             }
         },
-
-        // 3. Vender la receta SOLO si tiene la carta
         {
             "LogName": "Add Recipe to Robin (Conditional)",
             "Action": "EditData",
