@@ -12,8 +12,10 @@
             "Target": "Mods/JavCombita/ELE/Shelter",
             "FromFile": "assets/ladybug_shelter.png"
         },
+        
+        // --- 1. DATA/OBJECTS: Solo para items de mano (Analizador) ---
         {
-            "LogName": "Define Items",
+            "LogName": "Define Objects",
             "Action": "EditData",
             "Target": "Data/Objects",
             "Entries": {
@@ -27,21 +29,33 @@
                     "Texture": "Mods/JavCombita/ELE/Analyzer", 
                     "SpriteIndex": 0,
                     "ContextTags": ["not_giftable", "color_yellow"]
-                },
+                }
+            }
+        },
+
+        // --- 2. DATA/BIGCRAFTABLES: Para edificios/máquinas (Shelter) ---
+        // Al moverlo aquí, el juego entiende que mide 16x32 y tiene colisión física.
+        {
+            "LogName": "Define Big Craftables",
+            "Action": "EditData",
+            "Target": "Data/BigCraftables", 
+            "Entries": {
                 "JavCombita.ELE_LadybugShelter": {
                     "Name": "Ladybug Shelter",
                     "DisplayName": "{{i18n:item.shelter.name}}",
                     "Description": "{{i18n:item.shelter.description}}",
-                    "Type": "BigCraftable",
-                    "Category": -9,
                     "Price": 1000,
                     "Texture": "Mods/JavCombita/ELE/Shelter", 
                     "SpriteIndex": 0, 
-                    "Fragility": 0,
+                    "WobbleWhileWorking": true,
+                    // Fragility 2 es clave para poder recogerlo con herramientas
+                    "Fragility": 2, 
                     "ContextTags": ["not_giftable"]
                 }
             }
         },
+
+        // --- TIENDAS Y RECETAS ---
         {
             "LogName": "Add Analyzer to Pierre",
             "Action": "EditData",
@@ -61,21 +75,20 @@
             "Action": "EditData",
             "Target": "Data/CraftingRecipes",
             "Entries": {
+                // La receta produce el item definido arriba en BigCraftables
                 "Ladybug Shelter": "388 70 709 30/Home/JavCombita.ELE_LadybugShelter/false/null"
             }
         },
         
-        // --- SISTEMA DE CARTA Y TIENDA ---
+        // --- SISTEMA DE CARTA Y DESBLOQUEO ---
         {
             "LogName": "Add Mail Content",
             "Action": "EditData",
             "Target": "Data/mail",
             "Entries": {
-                // CORRECCIÓN: Agregamos [#] y el título para que el juego sepa formatearlo
                 "JavCombita.ELE_RobinShelterMail": "{{i18n:mail.robin_shelter.body}}[#]{{i18n:mail.robin_shelter.title}}"
             }
         },
-        // NOTA: Eliminé Data/TriggerActions porque lo haremos en C#
         {
             "LogName": "Add Recipe to Robin (Conditional)",
             "Action": "EditData",
@@ -87,7 +100,6 @@
                     "ItemId": "JavCombita.ELE_LadybugShelter", 
                     "IsRecipe": true, 
                     "Price": 3000,
-                    // ESTO ES LO IMPORTANTE: Solo aparece si tienes la carta
                     "AvailableCondition": "PLAYER_HAS_MAIL JavCombita.ELE_RobinShelterMail" 
                 }
             }
