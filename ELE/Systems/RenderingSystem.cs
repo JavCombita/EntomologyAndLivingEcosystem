@@ -15,15 +15,9 @@ namespace ELE.Core.Systems
         
         // Texturas
         private Texture2D PixelTexture;
-        private Texture2D ShelterTexture;
-
+        
         // IDs (Cache)
         private const string AnalyzerItemId = "JavCombita.ELE_SoilAnalyzer";
-        private const string ShelterItemId = "JavCombita.ELE_LadybugShelter";
-
-        // CONFIGURACIÓN DE ANIMACIÓN
-        private const int FrameWidth = 16;
-        private const int FrameHeight = 32; // CAMBIO: Ahora es 32px de alto (16x32)
 
         public RenderingSystem(ModEntry mod)
         {
@@ -33,16 +27,7 @@ namespace ELE.Core.Systems
             this.PixelTexture = new Texture2D(Game1.graphics.GraphicsDevice, 1, 1);
             this.PixelTexture.SetData(new[] { Color.White });
 
-            // 2. Cargar Textura Animada
-            try 
-            {
-                this.ShelterTexture = mod.Helper.ModContent.Load<Texture2D>("assets/ladybug_shelter_anim.png");
-            }
-            catch (Exception ex)
-            {
-                mod.Monitor.Log($"Failed to load animated texture: {ex.Message}. Animation disabled.", LogLevel.Warn);
-                this.ShelterTexture = null;
-            }
+            // NOTA: La carga del Shelter se movió a ModEntry para el parche de Harmony.
 
             // Eventos
             mod.Helper.Events.Display.RenderedWorld += OnRenderedWorld;
@@ -53,9 +38,11 @@ namespace ELE.Core.Systems
         {
             if (!Context.IsWorldReady || Game1.currentLocation == null) return;
 
+            // OPTIMIZACIÓN: Si no tiene el analyzer, no hacemos nada en RenderedWorld
+            if (!IsPlayerHoldingAnalyzer()) return;
+
             GameLocation location = Game1.currentLocation;
             SpriteBatch b = e.SpriteBatch;
-            bool showingOverlay = IsPlayerHoldingAnalyzer();
 
             // PERFORMANCE: Viewport culling
             int minX = Game1.viewport.X / 64; 
@@ -69,65 +56,16 @@ namespace ELE.Core.Systems
                 {
                     Vector2 tile = new Vector2(x, y);
 
-                    // 1. DIBUJAR OVERLAY
-                    if (showingOverlay)
+                    // 1. DIBUJAR OVERLAY DE NUTRIENTES
+                    if (location.terrainFeatures.TryGetValue(tile, out TerrainFeature tf) && tf is HoeDirt)
                     {
-                        if (location.terrainFeatures.TryGetValue(tile, out TerrainFeature tf) && tf is HoeDirt)
-                        {
-                            SoilData data = this.Mod.Ecosystem.GetSoilDataAt(location, tile);
-                            Color overlayColor = CalculateHealthColor(data);
-                            Vector2 screenPos = Game1.GlobalToLocal(Game1.viewport, tile * 64f);
-                            b.Draw(this.PixelTexture, new Rectangle((int)screenPos.X, (int)screenPos.Y, 64, 64), overlayColor);
-                        }
-                    }
-
-                    // 2. DIBUJAR ANIMACIÓN DEL SHELTER
-                    if (this.ShelterTexture != null && location.Objects.TryGetValue(tile, out StardewValley.Object obj))
-                    {
-                        if (obj.ItemId == ShelterItemId)
-                        {
-                            DrawAnimatedShelter(b, tile);
-                        }
+                        SoilData data = this.Mod.Ecosystem.GetSoilDataAt(location, tile);
+                        Color overlayColor = CalculateHealthColor(data);
+                        Vector2 screenPos = Game1.GlobalToLocal(Game1.viewport, tile * 64f);
+                        b.Draw(this.PixelTexture, new Rectangle((int)screenPos.X, (int)screenPos.Y, 64, 64), overlayColor);
                     }
                 }
             }
-        }
-
-        private void DrawAnimatedShelter(SpriteBatch b, Vector2 tile)
-        {
-            // Lógica de Frames
-            int totalFrames = 4;
-            int frameDuration = 250; 
-            int currentFrame = (int)(Game1.currentGameTime.TotalGameTime.TotalMilliseconds / frameDuration) % totalFrames;
-
-            // RECORTAR TEXTURA (Ahora usamos FrameHeight 32)
-            Rectangle sourceRect = new Rectangle(0, currentFrame * FrameHeight, FrameWidth, FrameHeight);
-
-            // POSICIÓN EN PANTALLA
-            Vector2 screenPos = Game1.GlobalToLocal(Game1.viewport, tile * 64f);
-
-            // --- CORRECCIÓN DE ALTURA ---
-            // Como la imagen mide 32px (2 tiles visuales), subimos el dibujo 64 píxeles 
-            // para que los "pies" del Shelter toquen el suelo del tile actual.
-            screenPos.Y -= 64f; 
-            // ----------------------------
-
-            // PROFUNDIDAD (Layer Depth)
-            // Usamos la base del objeto ((tile.Y + 1)) para que el jugador pase por detrás del techo correctamente.
-            // Agregamos un epsilon pequeño (+0.0001f) para que se dibuje justo encima de la textura estática.
-            float layerDepth = ((tile.Y + 1) * 64f) / 10000f + 0.0001f;
-
-            b.Draw(
-                this.ShelterTexture,
-                screenPos,
-                sourceRect,
-                Color.White,
-                0f,
-                Vector2.Zero,
-                4f, // Escala 4x
-                SpriteEffects.None,
-                layerDepth
-            );
         }
 
         private void OnRenderedHud(object sender, RenderedHudEventArgs e)
