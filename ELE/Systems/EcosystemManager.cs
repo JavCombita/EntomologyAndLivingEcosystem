@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics; // Necesario para Texture2D
+using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewValley;
 using StardewValley.TerrainFeatures;
@@ -62,19 +62,23 @@ namespace ELE.Core.Systems
             if (Game1.currentLocation == null || (!Game1.currentLocation.IsFarm && !Game1.currentLocation.Name.Contains("Greenhouse"))) return;
             if (Game1.eventUp || Game1.isFestival()) return;
             
-            if (Game1.random.NextDouble() < 0.05) SpawnPestNearPlayer(Game1.currentLocation);
+            // Invasión Natural: isForced = false
+            if (Game1.random.NextDouble() < 0.05) SpawnPestNearPlayer(Game1.currentLocation, isForced: false);
         }
 
         public void ForcePestInvasion()
         {
             if (Game1.currentLocation == null) return;
-            this.Monitor.Log("🐜 DEBUG: Forcing pest invasion now...", LogLevel.Warn);
-            SpawnPestNearPlayer(Game1.currentLocation);
+            this.Monitor.Log("🐜 DEBUG: Forcing pest invasion (Ignoring nutrients)...", LogLevel.Warn);
+            
+            // Invasión Forzada: isForced = true
+            SpawnPestNearPlayer(Game1.currentLocation, isForced: true);
         }
 
-        private void SpawnPestNearPlayer(GameLocation location)
+        private void SpawnPestNearPlayer(GameLocation location, bool isForced = false)
         {
             Vector2 playerPos = Game1.player.Tile;
+            bool cropFound = false;
             
             for (int x = -5; x <= 5; x++)
             {
@@ -84,16 +88,37 @@ namespace ELE.Core.Systems
                     
                     if (location.terrainFeatures.TryGetValue(targetTile, out TerrainFeature tf) && tf is HoeDirt dirt && dirt.crop != null)
                     {
-                        if (IsPestActiveAt(location, targetTile)) continue;
+                        cropFound = true;
 
+                        // 1. CHEQUEO DE ACTIVIDAD (Si ya hay plaga, no poner otra encima)
+                        if (IsPestActiveAt(location, targetTile)) 
+                        {
+                            if (isForced) this.Monitor.Log($"🐜 Debug: Pest already active at {targetTile}", LogLevel.Trace);
+                            continue;
+                        }
+
+                        // 2. SHELTER CHECK
                         StardewValley.Object protector = GetProtectorShelter(location, targetTile);
-                        if (protector != null) return; 
+                        if (protector != null)
+                        {
+                            if (isForced)
+                            {
+                                // Si es forzado, avisamos que el Shelter lo bloqueó pero mostramos efecto de bloqueo
+                                location.temporarySprites.Add(new TemporaryAnimatedSprite(5, targetTile * 64f, Color.Cyan) { scale = 0.5f });
+                                this.Monitor.Log($"🛡️ Forced Invasion BLOCKED by Shelter at {targetTile}", LogLevel.Warn);
+                                return;
+                            }
+                            return; // Bloqueo natural silencioso
+                        }
 
+                        // 3. ATAQUE
                         SoilData soil = GetSoilDataAt(location, targetTile);
                         float dangerThreshold = 50f; 
 
-                        if (soil.Potassium < dangerThreshold)
+                        // CAMBIO CRÍTICO: Si es forzado (OR ||), ignoramos el nivel de Potasio
+                        if (soil.Potassium < dangerThreshold || isForced)
                         {
+                            // --- GENERAR PLAGA ---
                             if (ModEntry.PestTexture != null)
                             {
                                 location.temporarySprites.Add(new VerticalPestSprite(ModEntry.PestTexture, targetTile * 64f));
@@ -114,12 +139,19 @@ namespace ELE.Core.Systems
                                 });
                             }
                             
-                            this.Monitor.Log($"🐜 PEST SPAWNED at {targetTile} (Persistent Effect)", LogLevel.Trace);
-                            return; 
+                            if (isForced)
+                                this.Monitor.Log($"✅ DEBUG SUCCESS: Pest spawned at {targetTile} (Forced)", LogLevel.Alert);
+                            else
+                                this.Monitor.Log($"🐜 PEST SPAWNED at {targetTile} (Low K: {soil.Potassium})", LogLevel.Trace);
+                            
+                            return; // Solo una plaga por llamada
                         }
                     }
                 }
             }
+            
+            if (!cropFound && isForced)
+                this.Monitor.Log("❌ DEBUG FAILED: No crops found near player (5 tile radius). Stand closer to a crop!", LogLevel.Error);
         }
 
         private bool IsPestActiveAt(GameLocation location, Vector2 tile)
@@ -207,7 +239,7 @@ namespace ELE.Core.Systems
             
             this.sourceRect = new Rectangle(0, 0, 16, 16);
             
-            // CORRECCIÓN AQUÍ: Usamos Vector2 en lugar de Rectangle
+            // CORRECCIÓN: Vector2 para la posición inicial del recorte
             this.sourceRectStartingPos = new Vector2(0f, 0f); 
             
             this.interval = 100f;          
