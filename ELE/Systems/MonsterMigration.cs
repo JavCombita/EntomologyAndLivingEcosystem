@@ -66,19 +66,16 @@ namespace ELE.Core.Systems
             IsInvasionActive = true;
             this.Mod.Monitor.Log("⚠️ FARM INVASION STARTED!", LogLevel.Warn);
             
-            Game1.addHUDMessage(new HUDMessage("The monsters are attacking your farm!", 2)); // Puedes traducir esto
+            Game1.addHUDMessage(new HUDMessage("The monsters are attacking your farm!", 2)); 
             Game1.playSound("shadowpeep");
 
-            // RALLY POINT: La puerta de la casa
-            // Los monstruos se agruparán en la entrada de tu casa si no te encuentran.
-            Point farmhouseEntry = farm.GetMainFarmHouseEntry();
+            // CORRECCIÓN AQUÍ: Casting (Farm) para usar GetMainFarmHouseEntry
+            Point farmhouseEntry = ((Farm)farm).GetMainFarmHouseEntry();
             InvasionRallyPoint = new Vector2(farmhouseEntry.X, farmhouseEntry.Y);
 
-            // --- DIFICULTAD DINÁMICA ---
             int combatLevel = Game1.player.CombatLevel;
             int minMonsters = 5;
             int maxMonsters = 10;
-            
             string difficulty = this.Mod.Config.InvasionDifficulty ?? "Medium";
 
             switch (difficulty)
@@ -91,8 +88,6 @@ namespace ELE.Core.Systems
             }
 
             int monsterCount = Game1.random.Next(minMonsters, maxMonsters + 1); 
-            // ---------------------------
-
             RefreshSpawnableMonsters();
 
             int spawnedCount = 0;
