@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Graphics; // Necesario para Texture2D
 using StardewModdingAPI;
 using StardewValley;
 using StardewValley.TerrainFeatures;
@@ -62,8 +62,7 @@ namespace ELE.Core.Systems
             if (Game1.currentLocation == null || (!Game1.currentLocation.IsFarm && !Game1.currentLocation.Name.Contains("Greenhouse"))) return;
             if (Game1.eventUp || Game1.isFestival()) return;
             
-            // Subimos la probabilidad un poco para que el chequeo sea más frecuente
-            // Ya que ahora tenemos protección contra duplicados, no importa si se llama mucho.
+            // Probabilidad del 5% por tick para revisar si debe spawnear o renovar una plaga
             if (Game1.random.NextDouble() < 0.05) SpawnPestNearPlayer(Game1.currentLocation);
         }
 
@@ -86,17 +85,14 @@ namespace ELE.Core.Systems
                     
                     if (location.terrainFeatures.TryGetValue(targetTile, out TerrainFeature tf) && tf is HoeDirt dirt && dirt.crop != null)
                     {
-                        // 1. CHEQUEO INTELIGENTE DE MEMORIA (NUEVO)
+                        // 1. CHEQUEO INTELIGENTE DE MEMORIA
                         // Si ya hay una plaga visual activa en este tile, no hacemos nada.
-                        // Esto evita que se apilen 10 nubes de moscas en el mismo sitio.
                         if (IsPestActiveAt(location, targetTile)) continue;
 
                         // 2. SHELTER CHECK
                         StardewValley.Object protector = GetProtectorShelter(location, targetTile);
                         if (protector != null)
                         {
-                            // Lógica de shelter... (Omitimos el efecto visual constante aquí para no saturar)
-                            // Solo aumentamos contador si realmente intentó atacar
                             return; 
                         }
 
@@ -113,7 +109,7 @@ namespace ELE.Core.Systems
                             }
                             else
                             {
-                                // Fallback Vanilla (Insectos negros) - También ajustado para durar más
+                                // Fallback Vanilla
                                 location.temporarySprites.Add(new TemporaryAnimatedSprite(
                                     textureName: "LooseSprites\\Cursors",
                                     sourceRect: new Rectangle(381, 1342, 10, 10),
@@ -123,7 +119,7 @@ namespace ELE.Core.Systems
                                     motion = new Vector2((float)Game1.random.NextDouble() - 0.5f, -1f),
                                     scale = 4f, 
                                     interval = 100f, 
-                                    totalNumberOfLoops = 20, // Dura más tiempo
+                                    totalNumberOfLoops = 20,
                                     animationLength = 4
                                 });
                             }
@@ -136,29 +132,13 @@ namespace ELE.Core.Systems
             }
         }
 
-        /// <summary>
-        /// Verifica si ya existe una animación de Plaga en ese tile específico.
-        /// </summary>
         private bool IsPestActiveAt(GameLocation location, Vector2 tile)
         {
             Vector2 positionToCheck = tile * 64f;
-            
-            // Recorremos la lista de sprites temporales activos en el mapa
             foreach (var sprite in location.temporarySprites)
             {
-                // Si es nuestra clase personalizada Y está en la misma posición
-                if (sprite is VerticalPestSprite && Vector2.Distance(sprite.position, positionToCheck) < 10f)
-                {
-                    return true;
-                }
-                
-                // Si es el fallback vanilla (chequeamos textura y posición)
-                if (sprite.textureName == "LooseSprites\\Cursors" && 
-                    sprite.sourceRect.X == 381 && 
-                    Vector2.Distance(sprite.position, positionToCheck) < 10f)
-                {
-                    return true;
-                }
+                if (sprite is VerticalPestSprite && Vector2.Distance(sprite.position, positionToCheck) < 10f) return true;
+                if (sprite.textureName == "LooseSprites\\Cursors" && sprite.sourceRect.X == 381 && Vector2.Distance(sprite.position, positionToCheck) < 10f) return true;
             }
             return false;
         }
@@ -228,7 +208,7 @@ namespace ELE.Core.Systems
         }
     }
 
-    // --- CLASE PERSONALIZADA (Vertical + Larga Duración) ---
+    // --- CLASE PERSONALIZADA (Vertical + Larga Duración + Corrección Override) ---
     public class VerticalPestSprite : TemporaryAnimatedSprite
     {
         public VerticalPestSprite(Texture2D texture, Vector2 position) : base()
@@ -239,25 +219,27 @@ namespace ELE.Core.Systems
             this.sourceRect = new Rectangle(0, 0, 16, 16);
             this.sourceRectStartingPos = new Rectangle(0, 0, 16, 16);
             
-            // CONFIGURACIÓN DE TIEMPO "PULSANTE"
-            this.interval = 100f;          // Velocidad de animación rápida (zumbido)
-            this.animationLength = 4;      // 4 frames
-            
-            // Duración: 4 frames * 100ms = 400ms por ciclo.
-            // 15 loops = 6 segundos de duración.
+            this.interval = 100f;          
+            this.animationLength = 4;      
             this.totalNumberOfLoops = 15;  
             
             this.scale = 4f;
             this.layerDepth = 1f;
-            this.motion = new Vector2((float)Game1.random.NextDouble() - 0.5f, -0.5f); // Movimiento más suave
+            this.motion = new Vector2((float)Game1.random.NextDouble() - 0.5f, -0.5f);
         }
 
-        public override void update(GameTime time)
+        // CORRECCIÓN: Ahora devuelve bool y llama a base.update
+        public override bool update(GameTime time)
         {
-            base.update(time);
-            // Corrección Vertical
+            // Ejecutamos la lógica normal (cuenta el tiempo, frames, etc.)
+            // 'result' será true si la animación debe morir, false si sigue viva.
+            bool result = base.update(time);
+
+            // Forzamos la lectura vertical
             this.sourceRect.X = 0; 
             this.sourceRect.Y = this.currentParentTileIndex * 16;
+
+            return result;
         }
     }
 }
