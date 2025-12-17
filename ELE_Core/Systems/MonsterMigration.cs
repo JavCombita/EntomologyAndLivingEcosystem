@@ -115,9 +115,6 @@ namespace ELE.Core.Systems
         {
             Vector2 position = tile * 64f;
             
-            // FIX 2: Constructors updated. Passing 0 or 121 (hard mode) as int, not string.
-            // We set the Name property afterwards to keep the mod metadata.
-
             if (name.Contains("Slime") || name.Contains("Jelly")) 
             {
                 var slime = new GreenSlime(position, 0); 
@@ -142,7 +139,7 @@ namespace ELE.Core.Systems
 
             if (name.Contains("Crab")) 
             {
-                var crab = new RockCrab(position); // Fixed: Removed string argument
+                var crab = new RockCrab(position); 
                 crab.Name = name;
                 return crab;
             }
@@ -176,14 +173,36 @@ namespace ELE.Core.Systems
                 int y = Game1.random.Next(0, mapHeight);
                 Vector2 tile = new Vector2(x, y);
 
-                // FIX 3: PascalCase update (isTile... -> IsTile...)
-                if (location.IsTileLocationTotallyClearAndPlaceable(tile) && !location.isWaterTile(x, y))
+                // FIX: Replaced broken method with custom robust check
+                if (IsTileValidForSpawn(location, tile))
                 {
                     return tile;
                 }
                 attempts++;
             }
             return Vector2.Zero;
+        }
+
+        /// <summary>
+        /// Custom robust check for Stardew 1.6 compatibility
+        /// </summary>
+        private bool IsTileValidForSpawn(GameLocation location, Vector2 tile)
+        {
+            // 1. Check basic map bounds
+            if (!location.isTileOnMap(tile)) return false;
+
+            // 2. Check for Water
+            if (location.isWaterTile((int)tile.X, (int)tile.Y)) return false;
+
+            // 3. Check for Occupancy (Furniture, Characters, Machines)
+            if (location.IsTileOccupied(tile)) return false;
+
+            // 4. Check for Collisions (Walls, Cliffs, Fences)
+            // We create a rectangle for the tile to check collision against the map
+            Rectangle tileRect = new Rectangle((int)tile.X * 64, (int)tile.Y * 64, 64, 64);
+            if (location.isCollidingPosition(tileRect, Game1.viewport, true, 0, false)) return false;
+
+            return true;
         }
 
         public void UpdateMigratingMonsters()
@@ -204,7 +223,6 @@ namespace ELE.Core.Systems
         {
             if (Vector2.Distance(monster.Position, Game1.player.Position) < 500f)
             {
-                // FIX 4: Field access (focusedOnFarmers is a field, not a Property)
                 if (!monster.focusedOnFarmers) monster.focusedOnFarmers = true;
                 return;
             }
