@@ -239,32 +239,33 @@ namespace ELE.Core.Systems
 
         private bool IsTileValidForSpawn(GameLocation location, Vector2 tile)
         {
-            // --- CORRECCIÓN: Volvemos a la verificación manual robusta ---
-            
-            // 1. Límites del mapa
+            // 1. Verificar límites y agua
             if (!location.isTileOnMap(tile)) return false;
-
-            // 2. Agua
             if (location.isWaterTile((int)tile.X, (int)tile.Y)) return false;
 
-            // 3. Ocupación Manual
-            // Objetos (Cofres, Máquinas)
-            if (location.Objects.ContainsKey(tile)) return false;
-            // Arbustos
-            if (location.getLargeTerrainFeatureAt((int)tile.X, (int)tile.Y) != null) return false;
-            // Jugadores
-            if (location.isTileOccupiedByFarmer(tile) != null) return false;
-
-            // 4. Colisiones (Muros, Acantilados)
-            // Usamos un rectángulo estándar de 64x64
+            // 2. Verificar Colisiones Físicas (Muros, Acantilados, Edificios)
+            // Creamos un rectángulo de 64x64 en la posición del tile
             Rectangle tileRect = new Rectangle((int)tile.X * 64, (int)tile.Y * 64, 64, 64);
             
-            // Check de colisión estándar que respeta la versión actual de Stardew
+            // "false, 0, false, null" son parámetros estándar para chequear colisiones generales
             if (location.isCollidingPosition(tileRect, Game1.viewport, false, 0, false, null)) return false;
+
+            // 3. Verificar Ocupación de Objetos
+            // ¿Hay un objeto (Cofre, Máquina, Piedra) aquí?
+            if (location.Objects.ContainsKey(tile)) return false;
+            
+            // ¿Hay un arbusto o árbol grande?
+            if (location.getLargeTerrainFeatureAt((int)tile.X, (int)tile.Y) != null) return false;
+            
+            // ¿Hay un jugador parado ahí?
+            if (location.isTileOccupiedByFarmer(tile) != null) return false;
+
+            // 4. Verificar si es construible/caminable (Propiedad del mapa)
+            // Esto evita que spawneen encima de decoraciones del mapa que no tienen colisión pero no son suelo válido
+            if (!location.isTilePassable(new xTile.Dimensions.Location((int)tile.X, (int)tile.Y), Game1.viewport)) return false;
 
             return true;
         }
-
         public void UpdateMigratingMonsters()
         {
             if (!IsInvasionActive) return;
