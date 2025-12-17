@@ -16,7 +16,7 @@ namespace ELE.Core.Systems
         private Vector2? InvasionRallyPoint = null;
         private List<string> CachedMonsterList = new List<string>();
 
-        // NUEVO: Cache para consultar datos de mobs de otros mods rápidamente
+        // Cache para consultar datos de mobs de otros mods rápidamente
         private Dictionary<string, string> MonsterDataCache;
 
         public MonsterMigration(ModEntry mod)
@@ -28,6 +28,13 @@ namespace ELE.Core.Systems
         {
             IsInvasionActive = false;
             if (!this.Mod.Config.EnableMonsterMigration) return;
+
+            // --- 1. CHEQUEO DE EVENTOS (NUEVO) ---
+            // Si hay festival, evento (cinemática) o boda, cancelamos.
+            if (Game1.isFestival() || Game1.eventUp || Game1.weddingToday) 
+                return;
+            // -------------------------------------
+
             if (Game1.stats.DaysPlayed < this.Mod.Config.DaysBeforeTownInvasion) return;
 
             // Probabilidad base ajustada por nivel
@@ -44,6 +51,9 @@ namespace ELE.Core.Systems
         /// </summary>
         public void ForceTownInvasion()
         {
+            // Opcional: Descomenta esto si quieres que el comando también respete los eventos
+            // if (Game1.isFestival() || Game1.eventUp) { this.Mod.Monitor.Log("Cannot invade during event.", LogLevel.Warn); return; }
+
             GameLocation town = Game1.getLocationFromName("Town");
             if (town == null) return;
 
@@ -63,6 +73,10 @@ namespace ELE.Core.Systems
             
             Game1.addHUDMessage(new HUDMessage(this.Mod.Helper.Translation.Get("notification.town_invasion"), 2));
             Game1.playSound("shadowpeep");
+
+            // --- 2. EVACUAR ALDEANOS (RESTAURADO) ---
+            EvacuateVillagers(town);
+            // ----------------------------------------
 
             // Rally Point: Saloon Door
             Point saloonDoor = town.doors.Keys.FirstOrDefault(d => town.doors[d] == "Saloon");
@@ -107,19 +121,45 @@ namespace ELE.Core.Systems
 
             RefreshSpawnableMonsters();
 
+            int spawnedCount = 0;
             for (int i = 0; i < monsterCount; i++)
             {
-                SpawnRandomMonster(town);
+                if (SpawnRandomMonster(town)) spawnedCount++;
+            }
+            this.Mod.Monitor.Log($"⚔️ Invasion Status: {spawnedCount}/{monsterCount} monsters spawned.", LogLevel.Info);
+        }
+
+        /// <summary>
+        /// Mueve a los NPCs del Pueblo al Saloon para protegerlos.
+        /// </summary>
+        private void EvacuateVillagers(GameLocation town)
+        {
+            GameLocation saloon = Game1.getLocationFromName("Saloon");
+            if (saloon == null) return;
+
+            this.Mod.Monitor.Log("📢 Evacuating villagers to the Saloon...", LogLevel.Info);
+
+            // Copiamos la lista para iterar seguros
+            var charactersInTown = town.characters.ToList();
+
+            foreach (NPC npc in charactersInTown)
+            {
+                // No mover monstruos, caballos o mascotas
+                if (npc is Monster || npc is Horse || npc is Pet) continue;
+
+                // Teletransportar al Saloon (Coordenadas aproximadas 15,18 con variación)
+                Game1.warpCharacter(npc, "Saloon", new Vector2(15 + Game1.random.Next(-3, 3), 18 + Game1.random.Next(-2, 2)));
+                
+                // Resetear diálogo y mostrar alerta
+                npc.CurrentDialogue.Clear();
+                npc.showTextAboveHead("!"); 
             }
         }
 
         private void RefreshSpawnableMonsters()
         {
             CachedMonsterList.Clear();
-            
-            // NUEVO: Cargamos los datos en la variable de clase para usarlos en el Factory
             MonsterDataCache = Game1.content.Load<Dictionary<string, string>>("Data/Monsters");
-            
             int playerLevel = Game1.player.CombatLevel;
 
             foreach (var kvp in MonsterDataCache)
@@ -135,7 +175,7 @@ namespace ELE.Core.Systems
                 
                 // Filtro de dificultad
                 int difficultyScore = (hp / 20) + damage;
-                int maxDifficultyAllowed = (playerLevel + 1) * 20;
+                int maxDifficultyAllowed = (playerLevel + 1) * 25; // Le subí un poco el margen (de 20 a 25) para más variedad
 
                 if (difficultyScore <= maxDifficultyAllowed)
                 {
@@ -149,12 +189,15 @@ namespace ELE.Core.Systems
                     }
                 }
             }
+
+            // Fallback si la lista queda vacía
+            if (CachedMonsterList.Count == 0) CachedMonsterList.Add("Green Slime");
         }
 
-        private void SpawnRandomMonster(GameLocation location)
+        private bool SpawnRandomMonster(GameLocation location)
         {
             Vector2 spawnTile = GetRandomSpawnSpot(location);
-            if (spawnTile == Vector2.Zero) return;
+            if (spawnTile == Vector2.Zero) return false;
 
             if (CachedMonsterList.Count == 0) RefreshSpawnableMonsters();
             string monsterName = CachedMonsterList[Game1.random.Next(CachedMonsterList.Count)];
@@ -165,79 +208,46 @@ namespace ELE.Core.Systems
             {
                 monster.focusedOnFarmers = true; 
                 location.characters.Add(monster);
-                this.Mod.Monitor.Log($"Spawned {monster.Name} at Town.", LogLevel.Trace);
+                this.Mod.Monitor.Log($"Spawned {monster.Name} at Town {spawnTile}.", LogLevel.Trace);
+                return true;
             }
+            return false;
         }
 
         private Monster CreateMonsterFactory(string name, Vector2 tile)
         {
             Vector2 position = tile * 64f;
             
-            // 1. INTENTO POR NOMBRE (Lógica Explícita Vanilla)
+            // 1. INTENTO POR NOMBRE (Lógica Vanilla)
             if (name.Contains("Slime") || name.Contains("Jelly")) 
             {
-                var slime = new GreenSlime(position, 0); 
-                slime.Name = name;
-                return slime;
+                var slime = new GreenSlime(position, 0); slime.Name = name; return slime;
             }
-            
             if (name.Contains("Bat") || name.Contains("Frost Bat") || name.Contains("Lava Bat")) 
                 return new Bat(position, 0) { Name = name }; 
-
-            if (name.Contains("Bug") || name.Contains("Fly")) 
-                return new Bug(position, 0); 
-                
-            if (name.Contains("Grub")) 
-                return new Grub(position, true); 
-
-            if (name.Contains("Ghost")) 
-                return new Ghost(position);
-            
-            if (name.Contains("Skeleton")) 
-                return new Skeleton(position);
-
-            if (name.Contains("Crab")) 
-            {
-                var crab = new RockCrab(position); 
-                crab.Name = name;
-                return crab;
-            }
-            
-            if (name.Contains("Golem") || name.Contains("Stone"))
-                return new RockGolem(position);
-
-            if (name.Contains("Shadow") || name.Contains("Brute"))
-                return new ShadowBrute(position);
-
-            if (name.Contains("Shaman"))
-                return new ShadowShaman(position);
-            
-            if (name.Contains("Serpent"))
-                return new Serpent(position);
-            
-            if (name.Contains("Dust")) 
-                return new DustSpirit(position);
+            if (name.Contains("Bug") || name.Contains("Fly")) return new Bug(position, 0); 
+            if (name.Contains("Grub")) return new Grub(position, true); 
+            if (name.Contains("Ghost")) return new Ghost(position);
+            if (name.Contains("Skeleton")) return new Skeleton(position);
+            if (name.Contains("Crab")) { var crab = new RockCrab(position); crab.Name = name; return crab; }
+            if (name.Contains("Golem") || name.Contains("Stone")) return new RockGolem(position);
+            if (name.Contains("Shadow") || name.Contains("Brute")) return new ShadowBrute(position);
+            if (name.Contains("Shaman")) return new ShadowShaman(position);
+            if (name.Contains("Serpent")) return new Serpent(position);
+            if (name.Contains("Dust")) return new DustSpirit(position);
 
             // 2. INTENTO POR DATOS (Smart Fallback para Mods)
-            // Si el nombre no coincide con nada conocido, consultamos los datos para ver si vuela.
             if (MonsterDataCache != null && MonsterDataCache.TryGetValue(name, out string rawData))
             {
                 string[] fields = rawData.Split('/');
-                // El campo 4 en Data/Monsters es "isGlider" (volador)
-                // Formato típico: HP/Damage/MinCoins/MaxCoins/Glider/...
+                // El campo 4 es "isGlider"
                 if (fields.Length > 4 && bool.TryParse(fields[4], out bool isGlider) && isGlider)
-                {
-                    // Es un volador desconocido -> Usamos IA de Bat
                     return new Bat(position, 0) { Name = name };
-                }
                 else
-                {
-                    // Es terrestre desconocido -> Usamos IA de RockGolem (camina hacia el jugador)
-                    return new RockGolem(position) { Name = name };
-                }
+                    return new RockGolem(position) { Name = name }; // RockGolem es bueno persiguiendo
             }
 
-            // 3. FALLBACK FINAL (Si todo lo demás falla)
+            // 3. FALLBACK FINAL
             var fallback = new GreenSlime(position, 0);
             fallback.Name = name;
             return fallback;
@@ -249,7 +259,7 @@ namespace ELE.Core.Systems
             int mapWidth = location.Map.Layers[0].LayerWidth;
             int mapHeight = location.Map.Layers[0].LayerHeight;
 
-            while (attempts < 20)
+            while (attempts < 50) // Subimos intentos a 50
             {
                 int x = Game1.random.Next(0, mapWidth);
                 int y = Game1.random.Next(0, mapHeight);
@@ -266,15 +276,12 @@ namespace ELE.Core.Systems
 
         private bool IsTileValidForSpawn(GameLocation location, Vector2 tile)
         {
-            if (!location.isTileOnMap(tile)) return false;
+            // --- 3. CORRECCIÓN DE SPAWN ---
+            // Usamos este método nativo que es mucho más fiable que calcular colisiones manuales
+            if (!location.isTileLocationTotallyClearAndPlaceable(tile)) return false;
+
             if (location.isWaterTile((int)tile.X, (int)tile.Y)) return false;
-
-            if (location.Objects.ContainsKey(tile)) return false;
-            if (location.getLargeTerrainFeatureAt((int)tile.X, (int)tile.Y) != null) return false;
             if (location.isTileOccupiedByFarmer(tile) != null) return false;
-
-            Rectangle tileRect = new Rectangle((int)tile.X * 64, (int)tile.Y * 64, 64, 64);
-            if (location.isCollidingPosition(tileRect, Game1.viewport, false, 0, false, null)) return false;
 
             return true;
         }
