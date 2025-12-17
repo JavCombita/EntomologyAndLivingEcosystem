@@ -88,33 +88,17 @@ namespace ELE.Core.Systems
                         cropFound = true;
 
                         // 1. CHEQUEO DE ACTIVIDAD
-                        if (IsPestActiveAt(location, targetTile)) 
-                        {
-                            if (isForced) this.Monitor.Log($"🐜 Debug: Pest already active at {targetTile}", LogLevel.Trace);
-                            continue;
-                        }
+                        if (IsPestActiveAt(location, targetTile)) continue;
 
-                        // 2. SHELTER CHECK
+                        // 2. SHELTER CHECK (Defensa)
                         StardewValley.Object protector = GetProtectorShelter(location, targetTile);
                         if (protector != null)
                         {
-                            // --- RESTAURADO: LÓGICA DE CONTEO ---
                             int currentCount = 0;
-                            if (protector.modData.TryGetValue(PestCountKey, out string countStr))
-                            {
-                                int.TryParse(countStr, out currentCount);
-                            }
+                            if (protector.modData.TryGetValue(PestCountKey, out string countStr)) int.TryParse(countStr, out currentCount);
                             currentCount++;
                             protector.modData[PestCountKey] = currentCount.ToString();
-                            // ------------------------------------
-
-                            // Efecto visual de bloqueo
                             location.temporarySprites.Add(new TemporaryAnimatedSprite(5, targetTile * 64f, Color.Cyan) { scale = 0.5f });
-
-                            if (isForced)
-                            {
-                                this.Monitor.Log($"🛡️ Forced Invasion BLOCKED by Shelter at {targetTile}. Count: {currentCount}", LogLevel.Warn);
-                            }
                             return; // Bloqueado
                         }
 
@@ -124,39 +108,46 @@ namespace ELE.Core.Systems
 
                         if (soil.Potassium < dangerThreshold || isForced)
                         {
+                            // A) EFECTO VISUAL (Tu Plaga)
                             if (ModEntry.PestTexture != null)
-                            {
                                 location.temporarySprites.Add(new VerticalPestSprite(ModEntry.PestTexture, targetTile * 64f));
-                            }
                             else
+                                location.temporarySprites.Add(new TemporaryAnimatedSprite("LooseSprites\\Cursors", new Rectangle(381, 1342, 10, 10), targetTile * 64f, false, 0f, Color.White) { motion = Vector2.Zero, scale = 4f, interval = 100f, totalNumberOfLoops = 20, animationLength = 4 });
+                            
+                            // B) CONSECUENCIA 1: DAÑO AL SUELO (La plaga come nutrientes)
+                            soil.Nitrogen -= 25f;
+                            soil.Phosphorus -= 25f;
+                            soil.Potassium -= 25f;
+                            // Aseguramos que no baje de 0
+                            soil.Nitrogen = Math.Max(0, soil.Nitrogen);
+                            soil.Phosphorus = Math.Max(0, soil.Phosphorus);
+                            soil.Potassium = Math.Max(0, soil.Potassium);
+                            SaveSoilDataAt(location, targetTile, soil);
+
+                            this.Monitor.Log($"🐜 PEST ATTACK! Nutrients drained at {targetTile}", LogLevel.Warn);
+
+                            // C) CONSECUENCIA 2: MUERTE DEL CULTIVO (Probabilidad)
+                            // Si es forzado (debug) o si tienes mala suerte (30% de chance)
+                            if (isForced || Game1.random.NextDouble() < 0.30)
                             {
-                                location.temporarySprites.Add(new TemporaryAnimatedSprite(
-                                    textureName: "LooseSprites\\Cursors",
-                                    sourceRect: new Rectangle(381, 1342, 10, 10),
-                                    position: targetTile * 64f,
-                                    flipped: false, alphaFade: 0f, color: Color.White)
-                                {
-                                    motion = Vector2.Zero,
-                                    scale = 4f, 
-                                    interval = 100f, 
-                                    totalNumberOfLoops = 20,
-                                    animationLength = 4
-                                });
+                                // Sonido de daño
+                                location.playSound("cut"); 
+                                
+                                // Animación de hojas volando (como cuando usas la guadaña)
+                                Game1.createRadialDebris(location, 12, (int)targetTile.X, (int)targetTile.Y, 6, false);
+
+                                // Destruir el cultivo (true = animación de muerte)
+                                dirt.destroyCrop(targetTile, true, location);
+                                
+                                this.Monitor.Log("💀 CROP DESTROYED by Pest!", LogLevel.Alert);
                             }
                             
-                            if (isForced)
-                                this.Monitor.Log($"✅ DEBUG SUCCESS: Pest spawned at {targetTile} (Forced)", LogLevel.Alert);
-                            else
-                                this.Monitor.Log($"🐜 PEST SPAWNED at {targetTile} (Low K: {soil.Potassium})", LogLevel.Trace);
-                            
-                            return; 
+                            return; // Solo ataca una planta por ciclo
                         }
                     }
                 }
             }
-            
-            if (!cropFound && isForced)
-                this.Monitor.Log("❌ DEBUG FAILED: No crops found near player (5 tile radius). Stand closer to a crop!", LogLevel.Error);
+            if (!cropFound && isForced) this.Monitor.Log("❌ No crops found nearby.", LogLevel.Error);
         }
 
         private bool IsPestActiveAt(GameLocation location, Vector2 tile)
