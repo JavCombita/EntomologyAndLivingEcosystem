@@ -69,6 +69,8 @@ namespace ELE.Core.Systems
             SaveSoilDataAt(location, tile, soil);
         }
 
+        // --- SISTEMA DE PLAGAS ---
+
         public void UpdatePests()
         {
             if (Game1.currentLocation == null || (!Game1.currentLocation.IsFarm && !Game1.currentLocation.Name.Contains("Greenhouse"))) 
@@ -80,10 +82,26 @@ namespace ELE.Core.Systems
             }
         }
 
+        /// <summary>
+        /// NUEVO: Comando público para forzar plagas (Debug).
+        /// Llamado desde 'ModEntry.cs' por el comando 'ele_pest'.
+        /// </summary>
+        public void ForcePestInvasion()
+        {
+            if (Game1.currentLocation == null) return;
+            
+            this.Monitor.Log("🐜 DEBUG: Forcing pest invasion now...", LogLevel.Warn);
+            
+            // Llamamos a la lógica interna de spawneo.
+            // Esto asegura que probamos EXACTAMENTE la misma lógica que ocurre naturalmente.
+            SpawnPestNearPlayer(Game1.currentLocation);
+        }
+
         private void SpawnPestNearPlayer(GameLocation location)
         {
             Vector2 playerPos = Game1.player.Tile;
             
+            // Intentamos encontrar un cultivo válido cerca del jugador
             for (int x = -5; x <= 5; x++)
             {
                 for (int y = -5; y <= 5; y++)
@@ -92,40 +110,52 @@ namespace ELE.Core.Systems
                     
                     if (location.terrainFeatures.TryGetValue(targetTile, out TerrainFeature tf) && tf is HoeDirt dirt && dirt.crop != null)
                     {
-                        // --- LÓGICA DE DEFENSA BIOLÓGICA ---
-                        // Buscamos si hay un Shelter protegiendo este tile
+                        // --- LÓGICA DE DEFENSA BIOLÓGICA (SHELTER) ---
                         StardewValley.Object protector = GetProtectorShelter(location, targetTile);
 
                         if (protector != null)
                         {
-                            // Si existe, leemos su contador actual
+                            // Aumentar contador en el Shelter
                             int currentCount = 0;
                             if (protector.modData.TryGetValue(PestCountKey, out string countStr))
                             {
                                 int.TryParse(countStr, out currentCount);
                             }
-
-                            // Sumamos 1 plaga interceptada
                             currentCount++;
                             protector.modData[PestCountKey] = currentCount.ToString();
 
-                            // Debug Log (Opcional)
-                            // this.Monitor.Log($"🛡️ Pest blocked by Shelter at {protector.TileLocation}. Total: {currentCount}", LogLevel.Trace);
-                            
-                            continue; // Saltamos este tile, la plaga fue bloqueada
-                        }
-                        // -----------------------------------
+                            // Efecto visual positivo (corazones o algo que indique "Defendido")
+                            location.temporarySprites.Add(new TemporaryAnimatedSprite(
+                                "LooseSprites\\Cursors", new Rectangle(346, 400, 8, 8), 
+                                protector.TileLocation * 64f + new Vector2(32, -32), 
+                                false, 0f, Color.White)
+                            {
+                                scale = 4f,
+                                layerDepth = 1f,
+                                animationLength = 4,
+                                interval = 100f,
+                                motion = new Vector2(0f, -0.5f)
+                            });
 
+                            this.Monitor.Log($"🛡️ Pest blocked by Shelter at {protector.TileLocation}. Total blocked: {currentCount}", LogLevel.Info);
+                            
+                            return; // La plaga fue bloqueada, terminamos aquí.
+                        }
+                        // ---------------------------------------------
+
+                        // Si no hay defensa, revisamos salud del suelo
                         SoilData soil = GetSoilDataAt(location, targetTile);
                         
                         // Riesgo de Monocultivo
                         int neighbors = GetMonocultureScore(location, targetTile, dirt.crop);
                         float dangerThreshold = 30f + (neighbors * 5f); 
 
+                        // Si el Potasio está bajo, la plaga ataca
                         if (soil.Potassium < dangerThreshold)
                         {
                             Game1.addHUDMessage(new HUDMessage(this.Mod.Helper.Translation.Get("notification.invasion"), 3));
                             
+                            // Efecto visual de ataque (Insectos negros)
                             location.temporarySprites.Add(new TemporaryAnimatedSprite(
                                 textureName: "LooseSprites\\Cursors",
                                 sourceRect: new Rectangle(381, 1342, 10, 10),
@@ -140,11 +170,14 @@ namespace ELE.Core.Systems
                                 totalNumberOfLoops = 5,
                                 animationLength = 4
                             });
+                            
+                            // Aquí podrías agregar daño real al cultivo si quisieras
                             return; 
                         }
                     }
                 }
             }
+            this.Monitor.Log("🐜 Debug: No valid crops found nearby to attack.", LogLevel.Warn);
         }
 
         private int GetMonocultureScore(GameLocation location, Vector2 centerTile, Crop centerCrop)
@@ -170,7 +203,8 @@ namespace ELE.Core.Systems
         }
 
         /// <summary>
-        /// Busca un objeto Ladybug Shelter en radio 6 y lo devuelve.
+        /// Busca un objeto Ladybug Shelter en radio 6.
+        /// CORREGIDO PARA BIG CRAFTABLES: Busca en (X, Y) y (X, Y+1) para asegurar cobertura.
         /// </summary>
         private StardewValley.Object GetProtectorShelter(GameLocation location, Vector2 targetTile)
         {
@@ -180,6 +214,8 @@ namespace ELE.Core.Systems
                 for (int y = -radius; y <= radius; y++)
                 {
                     Vector2 checkTile = new Vector2(targetTile.X + x, targetTile.Y + y);
+                    
+                    // Verificamos si hay un objeto en ese tile
                     if (location.Objects.TryGetValue(checkTile, out StardewValley.Object obj))
                     {
                         if (obj.ItemId == LadybugShelterId) return obj;
