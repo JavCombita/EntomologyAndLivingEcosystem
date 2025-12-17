@@ -87,7 +87,8 @@ namespace ELE.Core
         private void OnInvasionCommand(string command, string[] args)
         {
             if (!Context.IsWorldReady) return;
-            this.Migration.ForceTownInvasion();
+            // CAMBIO AQUÍ:
+            this.Migration.ForceInvasion(); 
         }
 
         // --- MANEJADOR DE CLICS (PC + ANDROID + HERRAMIENTAS) ---
