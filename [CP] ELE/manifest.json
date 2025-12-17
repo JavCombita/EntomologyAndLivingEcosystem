@@ -1,16 +1,11 @@
 {
-  "Name": "Entomology and Living Ecosystem (Core)",
+  "Name": "Entomology and Living Ecosystem [CP]",
   "Author": "JavCombita",
   "Version": "1.0.0",
-  "Description": "Adds ecosystem logic, soil nutrients, and intelligent monster migrations.",
-  "UniqueID": "JavCombita.ELE.Core",
-  "EntryDll": "ELE_Core.dll",
-  "MinimumApiVersion": "4.0.0",
-  "UpdateKeys": [],
-  "Dependencies": [
-    {
-      "UniqueID": "spacechase0.GenericModConfigMenu",
-      "IsRequired": false
-    }
-  ]
+  "Description": "Assets and Data for ELE.",
+  "UniqueID": "JavCombita.ELE.Content",
+  "ContentPackFor": {
+    "UniqueID": "Pathoschild.ContentPatcher"
+  },
+  "UpdateKeys": []
 }
