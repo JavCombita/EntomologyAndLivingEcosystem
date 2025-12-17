@@ -24,31 +24,31 @@ jobs:
       run: dotnet restore
 
     - name: Build Core (Release Mode)
-      run: dotnet build ELE_Core/ELE_Core.csproj --configuration Release --no-restore /p:EnableModDeploy=false
+      run: dotnet build ELE/ELE_Core.csproj --configuration Release --no-restore /p:EnableModDeploy=false
 
     - name: Create Release Structure
       run: |
-        mkdir -p release/EntomologyAndLivingEcosystem/"[C#] ELE Core"
-        mkdir -p release/EntomologyAndLivingEcosystem/"[CP] ELE Content"
+        mkdir -p release/EntomologyAndLivingEcosystem/"ELE"
+        mkdir -p release/EntomologyAndLivingEcosystem/"[CP] ELE"
 
     - name: Package Core Module
       run: |
         # 1. Copiar DLL compilada
-        cp ELE_Core/bin/Release/net6.0/ELE_Core.dll release/EntomologyAndLivingEcosystem/"[C#] ELE Core"/
+        cp ELE/bin/Release/net6.0/ELE.dll release/EntomologyAndLivingEcosystem/"ELE"/
         
         # 2. Copiar Manifest e i18n
-        cp ELE_Core/manifest.json release/EntomologyAndLivingEcosystem/"[C#] ELE Core"/
-        cp -r ELE_Core/i18n release/EntomologyAndLivingEcosystem/"[C#] ELE Core"/
+        cp ELE/manifest.json release/EntomologyAndLivingEcosystem/"ELE"/
+        cp -r ELE/i18n release/EntomologyAndLivingEcosystem/"ELE"/
         
         # 3. COPIA FORZADA DE ASSETS
-        cp -r ELE_Core/assets release/EntomologyAndLivingEcosystem/"[C#] ELE Core"/
+        cp -r ELE/assets release/EntomologyAndLivingEcosystem/"ELE"/
 
     - name: Package Content Patcher Module
       run: |
-        cp ELE_Content/manifest.json release/EntomologyAndLivingEcosystem/"[CP] ELE Content"/
-        cp ELE_Content/content.json release/EntomologyAndLivingEcosystem/"[CP] ELE Content"/
-        cp -r ELE_Content/assets release/EntomologyAndLivingEcosystem/"[CP] ELE Content"/
-        cp -r ELE_Content/i18n release/EntomologyAndLivingEcosystem/"[CP] ELE Content"/
+        cp "[CP] ELE"/manifest.json release/EntomologyAndLivingEcosystem/"[CP] ELE"/
+        cp "[CP] ELE"/content.json release/EntomologyAndLivingEcosystem/"[CP] ELE"/
+        cp -r "[CP] ELE"/assets release/EntomologyAndLivingEcosystem/"[CP] ELE"/
+        cp -r "[CP] ELE"/i18n release/EntomologyAndLivingEcosystem/"[CP] ELE"/
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
