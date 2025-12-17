@@ -62,7 +62,6 @@ namespace ELE.Core.Systems
             if (Game1.currentLocation == null || (!Game1.currentLocation.IsFarm && !Game1.currentLocation.Name.Contains("Greenhouse"))) return;
             if (Game1.eventUp || Game1.isFestival()) return;
             
-            // Probabilidad del 5% por tick para revisar si debe spawnear o renovar una plaga
             if (Game1.random.NextDouble() < 0.05) SpawnPestNearPlayer(Game1.currentLocation);
         }
 
@@ -85,31 +84,22 @@ namespace ELE.Core.Systems
                     
                     if (location.terrainFeatures.TryGetValue(targetTile, out TerrainFeature tf) && tf is HoeDirt dirt && dirt.crop != null)
                     {
-                        // 1. CHEQUEO INTELIGENTE DE MEMORIA
-                        // Si ya hay una plaga visual activa en este tile, no hacemos nada.
                         if (IsPestActiveAt(location, targetTile)) continue;
 
-                        // 2. SHELTER CHECK
                         StardewValley.Object protector = GetProtectorShelter(location, targetTile);
-                        if (protector != null)
-                        {
-                            return; 
-                        }
+                        if (protector != null) return; 
 
-                        // 3. ATAQUE REAL
                         SoilData soil = GetSoilDataAt(location, targetTile);
                         float dangerThreshold = 50f; 
 
                         if (soil.Potassium < dangerThreshold)
                         {
-                            // --- GENERAR PLAGA PERSISTENTE ---
                             if (ModEntry.PestTexture != null)
                             {
                                 location.temporarySprites.Add(new VerticalPestSprite(ModEntry.PestTexture, targetTile * 64f));
                             }
                             else
                             {
-                                // Fallback Vanilla
                                 location.temporarySprites.Add(new TemporaryAnimatedSprite(
                                     textureName: "LooseSprites\\Cursors",
                                     sourceRect: new Rectangle(381, 1342, 10, 10),
@@ -208,7 +198,6 @@ namespace ELE.Core.Systems
         }
     }
 
-    // --- CLASE PERSONALIZADA (Vertical + Larga Duración + Corrección Override) ---
     public class VerticalPestSprite : TemporaryAnimatedSprite
     {
         public VerticalPestSprite(Texture2D texture, Vector2 position) : base()
@@ -217,7 +206,9 @@ namespace ELE.Core.Systems
             this.position = position;
             
             this.sourceRect = new Rectangle(0, 0, 16, 16);
-            this.sourceRectStartingPos = new Rectangle(0, 0, 16, 16);
+            
+            // CORRECCIÓN AQUÍ: Usamos Vector2 en lugar de Rectangle
+            this.sourceRectStartingPos = new Vector2(0f, 0f); 
             
             this.interval = 100f;          
             this.animationLength = 4;      
@@ -228,11 +219,8 @@ namespace ELE.Core.Systems
             this.motion = new Vector2((float)Game1.random.NextDouble() - 0.5f, -0.5f);
         }
 
-        // CORRECCIÓN: Ahora devuelve bool y llama a base.update
         public override bool update(GameTime time)
         {
-            // Ejecutamos la lógica normal (cuenta el tiempo, frames, etc.)
-            // 'result' será true si la animación debe morir, false si sigue viva.
             bool result = base.update(time);
 
             // Forzamos la lectura vertical
