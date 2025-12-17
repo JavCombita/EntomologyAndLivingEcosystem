@@ -29,7 +29,7 @@
             "LogName": "Add to Pierre's Shop",
             "Action": "EditData",
             "Target": "Data/Shops",
-            "TargetField": ["Pierre", "Items"],
+            "TargetField": ["SeedShop", "Items"], 
             "Entries": {
                 "JavCombita.ELE_SoilAnalyzer": {
                     "Id": "JavCombita.ELE_SoilAnalyzer",
