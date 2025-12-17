@@ -32,12 +32,12 @@
                     "Name": "Ladybug Shelter",
                     "DisplayName": "{{i18n:item.shelter.name}}",
                     "Description": "{{i18n:item.shelter.description}}",
-                    "Type": "BigCraftable", // FIX 1: Cambiado de "Crafting" a "BigCraftable" para que se coloque en el suelo correctamente
-                    "Category": -9, // FIX 2: Categoría -9 es "Big Craftable"
+                    "Type": "BigCraftable",
+                    "Category": -9,
                     "Price": 1000,
                     "Texture": "Mods/JavCombita/ELE/Shelter", 
                     "SpriteIndex": 0, 
-					"Fragility": 2,
+                    "Fragility": 1,
                     "ContextTags": ["not_giftable"]
                 }
             }
@@ -61,33 +61,21 @@
             "Action": "EditData",
             "Target": "Data/CraftingRecipes",
             "Entries": {
-                // FIX 3: La receta ahora dice "false" (no es legacy bigcraftable) y pide " 1" (cantidad).
-                "Ladybug Shelter": "388 50 709 10/Home/JavCombita.ELE_LadybugShelter 1/false/null"
+                "Ladybug Shelter": "388 70 709 30/Home/JavCombita.ELE_LadybugShelter/false/null"
             }
         },
         
-        // --- SISTEMA DE DESBLOQUEO (Igual que antes) ---
+        // --- SISTEMA DE CARTA Y TIENDA ---
         {
             "LogName": "Add Mail Content",
             "Action": "EditData",
             "Target": "Data/mail",
             "Entries": {
-                "JavCombita.ELE_RobinShelterMail": "{{i18n:mail.robin_shelter.body}}"
+                // CORRECCIÓN: Agregamos [#] y el título para que el juego sepa formatearlo
+                "JavCombita.ELE_RobinShelterMail": "{{i18n:mail.robin_shelter.body}}[#]{{i18n:mail.robin_shelter.title}}"
             }
         },
-        {
-            "LogName": "Logic: Send Mail on Level 3 + Robin 4 Hearts",
-            "Action": "EditData",
-            "Target": "Data/TriggerActions",
-            "Entries": {
-                "JavCombita.ELE_UnlockShelter": {
-                    "Id": "JavCombita.ELE_UnlockShelter",
-                    "Trigger": "DayStarted",
-                    "Condition": "PLAYER_FARMING_LEVEL Current 3, RELATIONSHIP_POINTS Robin 1000, !PLAYER_HAS_MAIL Current JavCombita.ELE_RobinShelterMail",
-                    "Actions": ["AddMail Current JavCombita.ELE_RobinShelterMail"]
-                }
-            }
-        },
+        // NOTA: Eliminé Data/TriggerActions porque lo haremos en C#
         {
             "LogName": "Add Recipe to Robin (Conditional)",
             "Action": "EditData",
@@ -99,6 +87,7 @@
                     "ItemId": "JavCombita.ELE_LadybugShelter", 
                     "IsRecipe": true, 
                     "Price": 3000,
+                    // ESTO ES LO IMPORTANTE: Solo aparece si tienes la carta
                     "AvailableCondition": "PLAYER_HAS_MAIL JavCombita.ELE_RobinShelterMail" 
                 }
             }

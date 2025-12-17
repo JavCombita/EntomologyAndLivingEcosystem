@@ -46,24 +46,21 @@ namespace ELE.Core
             helper.Events.GameLoop.DayStarted += OnDayStarted;
             helper.Events.GameLoop.UpdateTicked += OnUpdateTicked;
             
-            // --- NUEVO: Detectar interacción con objetos ---
+            // Detectar interacción con objetos
             helper.Events.Input.ButtonPressed += OnButtonPressed;
         }
 
-        // --- MANEJADOR DE CLICS (NUEVO) ---
+        // --- MANEJADOR DE CLICS ---
         private void OnButtonPressed(object sender, ButtonPressedEventArgs e)
         {
-            // Validar que el mundo esté cargado y sea botón de acción (Click Derecho / X)
             if (!Context.IsWorldReady || !e.Button.IsActionButton()) return;
 
             Vector2 tile = e.Cursor.Tile;
             
             if (Game1.currentLocation.Objects.TryGetValue(tile, out StardewValley.Object obj))
             {
-                // Si es el Ladybug Shelter
                 if (obj.ItemId == "JavCombita.ELE_LadybugShelter")
                 {
-                    // Leer contador
                     string key = "JavCombita.ELE/PestCount";
                     int count = 0;
                     if (obj.modData.TryGetValue(key, out string countStr))
@@ -71,15 +68,11 @@ namespace ELE.Core
                         int.TryParse(countStr, out count);
                     }
 
-                    // Mostrar mensaje
                     Game1.drawObjectDialogue(this.Helper.Translation.Get("message.shelter_status", new { count = count }));
-                    
-                    // Suprimir la acción para evitar comportamientos extraños
                     this.Helper.Input.Suppress(e.Button);
                 }
             }
         }
-        // ----------------------------------
 
         private void OnDayStarted(object sender, DayStartedEventArgs e)
         {
@@ -89,19 +82,41 @@ namespace ELE.Core
             }
             
             this.Migration.CheckMigrationStatus();
+
+            // --- LÓGICA DE CORREO DE ROBIN ---
+            CheckAndSendRobinMail();
+        }
+
+        private void CheckAndSendRobinMail()
+        {
+            // ID debe coincidir EXACTAMENTE con el de content.json
+            string mailId = "JavCombita.ELE_RobinShelterMail";
+
+            // 1. Si ya tiene la carta, salimos
+            if (Game1.player.mailReceived.Contains(mailId) || Game1.player.mailbox.Contains(mailId)) 
+                return;
+
+            // 2. Condición: 3 Corazones con Robin (750 puntos)
+            // Nota: Un corazón = 250 puntos. 3 corazones = 750.
+            if (Game1.player.getFriendshipHeartLevelForNPC("Robin") >= 3)
+            {
+                Game1.player.mailbox.Add(mailId);
+                this.Monitor.Log($"📬 Requirements met! Sending '{mailId}' to player.", LogLevel.Info);
+                
+                // Opcional: Sonido de notificación si quieres ser muy detallista, 
+                // pero el juego suele sonar al despertar si hay correo.
+            }
         }
 
         private void OnUpdateTicked(object sender, UpdateTickedEventArgs e)
         {
             if (!Context.IsWorldReady) return;
 
-            // Revisar plagas cada segundo (aprox 60 ticks)
             if (e.IsMultipleOf(60) && this.Config.EnablePestInvasions)
             {
                 this.Ecosystem.UpdatePests();
             }
 
-            // IA de Monstruos
             if (e.IsMultipleOf(15) && this.Config.EnableMonsterMigration)
             {
                 this.Migration.UpdateMigratingMonsters();
@@ -140,7 +155,6 @@ namespace ELE.Core
                 setValue: value => this.Config.EnableMonsterMigration = value
             );
 
-            // DIFICULTAD
             configMenu.AddTextOption(
                 mod: this.ModManifest,
                 name: () => this.Helper.Translation.Get("config.invasionDifficulty"),
