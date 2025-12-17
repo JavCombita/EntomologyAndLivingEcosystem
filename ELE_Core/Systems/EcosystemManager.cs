@@ -14,8 +14,9 @@ namespace ELE.Core.Systems
         private readonly ModEntry Mod;
         private readonly IMonitor Monitor;
         private const string SoilDataKey = "JavCombita.ELE/SoilData";
+        private const string PestCountKey = "JavCombita.ELE/PestCount";
         
-        // ID que definiremos en Content Patcher
+        // ID del Shelter
         private const string LadybugShelterId = "JavCombita.ELE_LadybugShelter";
 
         public EcosystemManager(ModEntry mod)
@@ -49,8 +50,7 @@ namespace ELE.Core.Systems
             float multiplier = this.Mod.Config.NutrientDepletionMultiplier;
             float stageFactor = (crop.currentPhase.Value + 1) * 0.5f;
 
-            // --- Lógica de Monocultivo ---
-            // Penalización: +10% de consumo por cada cultivo idéntico vecino
+            // Lógica de Monocultivo
             int neighbors = GetMonocultureScore(location, tile, crop);
             float competitionFactor = 1.0f + (neighbors * 0.1f);
 
@@ -74,7 +74,7 @@ namespace ELE.Core.Systems
             if (Game1.currentLocation == null || (!Game1.currentLocation.IsFarm && !Game1.currentLocation.Name.Contains("Greenhouse"))) 
                 return;
 
-            if (Game1.random.NextDouble() < 0.01) // 1% chance per second check
+            if (Game1.random.NextDouble() < 0.01) // 1% chance per second
             {
                 SpawnPestNearPlayer(Game1.currentLocation);
             }
@@ -82,7 +82,6 @@ namespace ELE.Core.Systems
 
         private void SpawnPestNearPlayer(GameLocation location)
         {
-            // Fix para Stardew 1.6 (.Tile en vez de getTileLocation)
             Vector2 playerPos = Game1.player.Tile;
             
             for (int x = -5; x <= 5; x++)
@@ -93,16 +92,35 @@ namespace ELE.Core.Systems
                     
                     if (location.terrainFeatures.TryGetValue(targetTile, out TerrainFeature tf) && tf is HoeDirt dirt && dirt.crop != null)
                     {
-                        // --- DEFENSA BIOLÓGICA ---
-                        if (IsProtectedByLadybugs(location, targetTile)) continue;
+                        // --- LÓGICA DE DEFENSA BIOLÓGICA ---
+                        // Buscamos si hay un Shelter protegiendo este tile
+                        StardewValley.Object protector = GetProtectorShelter(location, targetTile);
+
+                        if (protector != null)
+                        {
+                            // Si existe, leemos su contador actual
+                            int currentCount = 0;
+                            if (protector.modData.TryGetValue(PestCountKey, out string countStr))
+                            {
+                                int.TryParse(countStr, out currentCount);
+                            }
+
+                            // Sumamos 1 plaga interceptada
+                            currentCount++;
+                            protector.modData[PestCountKey] = currentCount.ToString();
+
+                            // Debug Log (Opcional)
+                            // this.Monitor.Log($"🛡️ Pest blocked by Shelter at {protector.TileLocation}. Total: {currentCount}", LogLevel.Trace);
+                            
+                            continue; // Saltamos este tile, la plaga fue bloqueada
+                        }
+                        // -----------------------------------
 
                         SoilData soil = GetSoilDataAt(location, targetTile);
-
-                        // --- RIESGO DE MONOCULTIVO ---
-                        // Si hay muchos vecinos, el cultivo se enferma más fácil (Umbral de K sube)
+                        
+                        // Riesgo de Monocultivo
                         int neighbors = GetMonocultureScore(location, targetTile, dirt.crop);
                         float dangerThreshold = 30f + (neighbors * 5f); 
-                        // Ej: Sin vecinos, atacan si K < 30. Con 8 vecinos, atacan si K < 70.
 
                         if (soil.Potassium < dangerThreshold)
                         {
@@ -141,7 +159,6 @@ namespace ELE.Core.Systems
                     Vector2 neighborTile = new Vector2(centerTile.X + x, centerTile.Y + y);
                     if (location.terrainFeatures.TryGetValue(neighborTile, out TerrainFeature tf) && tf is HoeDirt dirt && dirt.crop != null)
                     {
-                        // Comparamos el índice de cosecha para saber si son la misma planta
                         if (dirt.crop.indexOfHarvest.Value == centerCrop.indexOfHarvest.Value)
                         {
                             score++;
@@ -152,10 +169,12 @@ namespace ELE.Core.Systems
             return score;
         }
 
-        private bool IsProtectedByLadybugs(GameLocation location, Vector2 targetTile)
+        /// <summary>
+        /// Busca un objeto Ladybug Shelter en radio 6 y lo devuelve.
+        /// </summary>
+        private StardewValley.Object GetProtectorShelter(GameLocation location, Vector2 targetTile)
         {
             int radius = 6;
-            // Optimización: Escanear área pequeña en busca del objeto protector
             for (int x = -radius; x <= radius; x++)
             {
                 for (int y = -radius; y <= radius; y++)
@@ -163,11 +182,11 @@ namespace ELE.Core.Systems
                     Vector2 checkTile = new Vector2(targetTile.X + x, targetTile.Y + y);
                     if (location.Objects.TryGetValue(checkTile, out StardewValley.Object obj))
                     {
-                        if (obj.ItemId == LadybugShelterId) return true;
+                        if (obj.ItemId == LadybugShelterId) return obj;
                     }
                 }
             }
-            return false;
+            return null;
         }
 
         public SoilData GetSoilDataAt(GameLocation location, Vector2 tile)

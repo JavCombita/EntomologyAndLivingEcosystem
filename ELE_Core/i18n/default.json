@@ -26,5 +26,7 @@
   "difficulty.easy": "Easy (Relaxed)",
   "difficulty.medium": "Medium (Balanced)",
   "difficulty.hard": "Hard (Challenging)",
-  "difficulty.veryhard": "Very Hard (Apocalypse)"
+  "difficulty.veryhard": "Very Hard (Apocalypse)",
+  
+  "message.shelter_status": "This shelter has intercepted {{count}} pest invasions."
 }

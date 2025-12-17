@@ -37,6 +37,7 @@
                     "Price": 1000,
                     "Texture": "Mods/JavCombita/ELE/Shelter", 
                     "SpriteIndex": 0, 
+					"Fragility": 2,
                     "ContextTags": ["not_giftable"]
                 }
             }
