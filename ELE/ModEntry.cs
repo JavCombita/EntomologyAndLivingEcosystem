@@ -50,27 +50,50 @@ namespace ELE.Core
             helper.Events.Input.ButtonPressed += OnButtonPressed;
         }
 
-        // --- MANEJADOR DE CLICS ---
+        // --- MANEJADOR DE CLICS (PC + ANDROID + BIG CRAFTABLES) ---
         private void OnButtonPressed(object sender, ButtonPressedEventArgs e)
         {
-            if (!Context.IsWorldReady || !e.Button.IsActionButton()) return;
+            if (!Context.IsWorldReady) return;
 
-            Vector2 tile = e.Cursor.Tile;
-            
-            if (Game1.currentLocation.Objects.TryGetValue(tile, out StardewValley.Object obj))
+            // 1. DETECCIÓN DE BOTÓN
+            // En PC queremos Clic Derecho (Action).
+            // En Android, el toque suele ser Clic Izquierdo (MouseLeft), así que lo permitimos también.
+            bool isAction = e.Button.IsActionButton();
+            bool isAndroidTap = Constants.TargetPlatform == GamePlatform.Android && e.Button == SButton.MouseLeft;
+
+            if (!isAction && !isAndroidTap) return;
+
+            // 2. OBTENER TILE CLICKEADO
+            Vector2 clickedTile = e.Cursor.Tile;
+            GameLocation location = Game1.currentLocation;
+
+            // 3. BUSCAR OBJETO (Lógica inteligente de "Cabeza y Pies")
+            StardewValley.Object obj = location.getObjectAtTile((int)clickedTile.X, (int)clickedTile.Y);
+
+            // Si le diste al techo (vacío), revisa los pies (Y + 1)
+            if (obj == null)
             {
-                if (obj.ItemId == "JavCombita.ELE_LadybugShelter")
-                {
-                    string key = "JavCombita.ELE/PestCount";
-                    int count = 0;
-                    if (obj.modData.TryGetValue(key, out string countStr))
-                    {
-                        int.TryParse(countStr, out count);
-                    }
+                obj = location.getObjectAtTile((int)clickedTile.X, (int)clickedTile.Y + 1);
+            }
 
-                    Game1.drawObjectDialogue(this.Helper.Translation.Get("message.shelter_status", new { count = count }));
-                    this.Helper.Input.Suppress(e.Button);
+            // 4. SI ES NUESTRO SHELTER
+            if (obj != null && obj.ItemId == "JavCombita.ELE_LadybugShelter")
+            {
+                string key = "JavCombita.ELE/PestCount";
+                int count = 0;
+                
+                if (obj.modData.TryGetValue(key, out string countStr))
+                {
+                    int.TryParse(countStr, out count);
                 }
+
+                // Mostrar mensaje
+                Game1.drawObjectDialogue(this.Helper.Translation.Get("message.shelter_status", new { count = count }));
+                
+                // CRUCIAL PARA ANDROID:
+                // "Suppress" cancela el clic original. Esto evita que el jugador
+                // golpee el Shelter con el hacha accidentalmente al tocarlo para leer.
+                this.Helper.Input.Suppress(e.Button);
             }
         }
 
