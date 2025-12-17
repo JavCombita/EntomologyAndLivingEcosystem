@@ -40,8 +40,7 @@ jobs:
         cp ELE_Core/manifest.json release/EntomologyLivingEcosystem/"[C#] ELE Core"/
         cp -r ELE_Core/i18n release/EntomologyLivingEcosystem/"[C#] ELE Core"/
         
-        # 3. COPIA FORZADA DE ASSETS (Solución al problema de animación)
-        # Esto copia la carpeta tal cual está en tu código fuente a la carpeta final
+        # 3. COPIA FORZADA DE ASSETS
         cp -r ELE_Core/assets release/EntomologyLivingEcosystem/"[C#] ELE Core"/
 
     - name: Package Content Patcher Module
@@ -51,12 +50,11 @@ jobs:
         cp -r ELE_Content/assets release/EntomologyLivingEcosystem/"[CP] ELE Content"/
         cp -r ELE_Content/i18n release/EntomologyLivingEcosystem/"[CP] ELE Content"/
 
-    # HE ELIMINADO EL PASO DE "ZIP MOD" PARA EVITAR EL DOBLE ZIP
-
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        # El nombre del archivo que descargará el usuario (será EntomologyLivingEcosystem.zip)
         name: EntomologyLivingEcosystem
-        # Subimos la CARPETA. GitHub se encarga de zipearla.
-        path: release/EntomologyLivingEcosystem/
+        # CAMBIO CLAVE AQUÍ:
+        # Antes: path: release/EntomologyLivingEcosystem/ (Tomaba el contenido suelto)
+        # Ahora: path: release/ (Toma la carpeta contenedora 'EntomologyLivingEcosystem')
+        path: release/
