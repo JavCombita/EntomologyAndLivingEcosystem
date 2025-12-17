@@ -76,6 +76,11 @@ namespace ELE.Core.Systems
             if (Game1.currentLocation == null || (!Game1.currentLocation.IsFarm && !Game1.currentLocation.Name.Contains("Greenhouse"))) 
                 return;
 
+            // --- NUEVO: CHEQUEO DE EVENTOS ---
+            // Si hay cinemática (evento) o es día de Festival, las plagas no atacan.
+            if (Game1.eventUp || Game1.isFestival()) return;
+            // ---------------------------------
+
             if (Game1.random.NextDouble() < 0.01) // 1% chance per second
             {
                 SpawnPestNearPlayer(Game1.currentLocation);
@@ -93,14 +98,14 @@ namespace ELE.Core.Systems
             this.Monitor.Log("🐜 DEBUG: Forcing pest invasion now...", LogLevel.Warn);
             
             // Llamamos a la lógica interna de spawneo.
-            // Esto asegura que probamos EXACTAMENTE la misma lógica que ocurre naturalmente.
             SpawnPestNearPlayer(Game1.currentLocation);
         }
 
         private void SpawnPestNearPlayer(GameLocation location)
         {
             Vector2 playerPos = Game1.player.Tile;
-            
+            bool pestAttempted = false; // Debug flag
+
             // Intentamos encontrar un cultivo válido cerca del jugador
             for (int x = -5; x <= 5; x++)
             {
@@ -110,7 +115,23 @@ namespace ELE.Core.Systems
                     
                     if (location.terrainFeatures.TryGetValue(targetTile, out TerrainFeature tf) && tf is HoeDirt dirt && dirt.crop != null)
                     {
-                        // --- LÓGICA DE DEFENSA BIOLÓGICA (SHELTER) ---
+                        pestAttempted = true;
+
+                        // 1. EFECTO VISUAL "ESCANEO" (Mosca pequeña aleatoria)
+                        // Para que veas que el sistema está activo aunque no ataque
+                        if (Game1.random.NextDouble() < 0.3) 
+                        {
+                            location.temporarySprites.Add(new TemporaryAnimatedSprite(
+                                "LooseSprites\\Cursors", new Rectangle(346, 400, 8, 8), 
+                                targetTile * 64f + new Vector2(Game1.random.Next(10, 50), Game1.random.Next(-50, 0)), 
+                                false, 0f, Color.Gray)
+                            {
+                                scale = 2f, animationLength = 4, interval = 100f,
+                                motion = new Vector2((float)Game1.random.NextDouble() - 0.5f, -1f)
+                            });
+                        }
+
+                        // 2. DEFENSA BIOLÓGICA (SHELTER)
                         StardewValley.Object protector = GetProtectorShelter(location, targetTile);
 
                         if (protector != null)
@@ -124,60 +145,79 @@ namespace ELE.Core.Systems
                             currentCount++;
                             protector.modData[PestCountKey] = currentCount.ToString();
 
-                            // Efecto visual positivo (corazones o algo que indique "Defendido")
+                            // Efecto de BLOQUEO (Explosión cian)
                             location.temporarySprites.Add(new TemporaryAnimatedSprite(
-                                "LooseSprites\\Cursors", new Rectangle(346, 400, 8, 8), 
-                                protector.TileLocation * 64f + new Vector2(32, -32), 
-                                false, 0f, Color.White)
-                            {
-                                scale = 4f,
-                                layerDepth = 1f,
-                                animationLength = 4,
-                                interval = 100f,
-                                motion = new Vector2(0f, -0.5f)
-                            });
+                                5, targetTile * 64f, Color.Cyan) { scale = 0.5f });
 
                             this.Monitor.Log($"🛡️ Pest blocked by Shelter at {protector.TileLocation}. Total blocked: {currentCount}", LogLevel.Info);
                             
-                            return; // La plaga fue bloqueada, terminamos aquí.
+                            return; // Bloqueado, salimos.
                         }
-                        // ---------------------------------------------
 
-                        // Si no hay defensa, revisamos salud del suelo
+                        // 3. ATAQUE REAL (Si no hay shelter)
                         SoilData soil = GetSoilDataAt(location, targetTile);
                         
-                        // Riesgo de Monocultivo
-                        int neighbors = GetMonocultureScore(location, targetTile, dirt.crop);
-                        float dangerThreshold = 30f + (neighbors * 5f); 
+                        // Umbral de ataque (puedes ajustarlo)
+                        // Si el potasio es bajo, la planta es débil contra plagas.
+                        float dangerThreshold = 50f; 
 
-                        // Si el Potasio está bajo, la plaga ataca
                         if (soil.Potassium < dangerThreshold)
                         {
                             Game1.addHUDMessage(new HUDMessage(this.Mod.Helper.Translation.Get("notification.invasion"), 3));
                             
-                            // Efecto visual de ataque (Insectos negros)
-                            location.temporarySprites.Add(new TemporaryAnimatedSprite(
-                                textureName: "LooseSprites\\Cursors",
-                                sourceRect: new Rectangle(381, 1342, 10, 10),
-                                position: targetTile * 64f,
-                                flipped: false,
-                                alphaFade: 0f,
-                                color: Color.White)
+                            // --- LÓGICA DE ANIMACIÓN (CUSTOM vs VANILLA) ---
+                            if (ModEntry.PestTexture != null)
                             {
-                                motion = new Vector2((float)Game1.random.NextDouble() - 0.5f, -1f),
-                                scale = 4f,
-                                interval = 50f,
-                                totalNumberOfLoops = 5,
-                                animationLength = 4
-                            });
+                                // Usamos tu textura personalizada (asumiendo frames de 16x16)
+                                location.temporarySprites.Add(new TemporaryAnimatedSprite(
+                                    textureName: null, 
+                                    sourceRect: new Rectangle(0, 0, 16, 16), 
+                                    position: targetTile * 64f,
+                                    flipped: false, 
+                                    alphaFade: 0f, 
+                                    color: Color.White)
+                                {
+                                    texture = ModEntry.PestTexture,
+                                    animationLength = 4, // Ajusta si tienes más frames
+                                    interval = 100f,
+                                    totalNumberOfLoops = 5,
+                                    scale = 4f,
+                                    motion = new Vector2((float)Game1.random.NextDouble() - 0.5f, -1f)
+                                });
+                            }
+                            else
+                            {
+                                // Fallback a Vanilla (Insectos negros)
+                                location.temporarySprites.Add(new TemporaryAnimatedSprite(
+                                    textureName: "LooseSprites\\Cursors",
+                                    sourceRect: new Rectangle(381, 1342, 10, 10),
+                                    position: targetTile * 64f,
+                                    flipped: false,
+                                    alphaFade: 0f,
+                                    color: Color.White)
+                                {
+                                    motion = new Vector2((float)Game1.random.NextDouble() - 0.5f, -1f),
+                                    scale = 4f,
+                                    interval = 50f,
+                                    totalNumberOfLoops = 5,
+                                    animationLength = 4
+                                });
+                            }
+                            // ---------------------------------------------
                             
-                            // Aquí podrías agregar daño real al cultivo si quisieras
-                            return; 
+                            this.Monitor.Log($"🐜 PEST ATTACK at {targetTile}! Soil K: {soil.Potassium}", LogLevel.Warn);
+                            
+                            // Aquí podrías dañar el cultivo:
+                            // dirt.crop = null; // Destruir cultivo (Cuidado, es muy agresivo)
+                            
+                            return; // Solo ataca uno por tick para no spamear
                         }
                     }
                 }
             }
-            this.Monitor.Log("🐜 Debug: No valid crops found nearby to attack.", LogLevel.Warn);
+
+            if (!pestAttempted) 
+                this.Monitor.Log("🐜 Debug: No crops found nearby to attack.", LogLevel.Info);
         }
 
         private int GetMonocultureScore(GameLocation location, Vector2 centerTile, Crop centerCrop)
@@ -202,10 +242,6 @@ namespace ELE.Core.Systems
             return score;
         }
 
-        /// <summary>
-        /// Busca un objeto Ladybug Shelter en radio 6.
-        /// CORREGIDO PARA BIG CRAFTABLES: Busca en (X, Y) y (X, Y+1) para asegurar cobertura.
-        /// </summary>
         private StardewValley.Object GetProtectorShelter(GameLocation location, Vector2 targetTile)
         {
             int radius = 6;
@@ -215,7 +251,6 @@ namespace ELE.Core.Systems
                 {
                     Vector2 checkTile = new Vector2(targetTile.X + x, targetTile.Y + y);
                     
-                    // Verificamos si hay un objeto en ese tile
                     if (location.Objects.TryGetValue(checkTile, out StardewValley.Object obj))
                     {
                         if (obj.ItemId == LadybugShelterId) return obj;
