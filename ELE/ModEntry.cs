@@ -16,6 +16,8 @@ namespace ELE.Core
         
         // --- NUEVO: Textura Estática para acceso global desde el Patch ---
         public static Texture2D ShelterTexture { get; private set; }
+
+        public static Texture2D PestTexture { get; private set; }
         // ---------------------------------------------------------------
 
         public ModConfig Config { get; private set; }
@@ -34,10 +36,13 @@ namespace ELE.Core
             try 
             {
                 ShelterTexture = helper.ModContent.Load<Texture2D>("assets/ladybug_shelter_anim.png");
+                
+                // Intenta cargar la textura de plaga, si no existe no pasa nada
+                PestTexture = helper.ModContent.Load<Texture2D>("assets/pest_anim.png");
             }
             catch (Exception ex)
             {
-                this.Monitor.Log($"Failed to load shelter texture: {ex}", LogLevel.Error);
+                this.Monitor.Log($"Failed to load textures: {ex.Message}", LogLevel.Warn);
             }
             // -------------------------------------
 
