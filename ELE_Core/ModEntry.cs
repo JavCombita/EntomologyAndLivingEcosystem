@@ -3,7 +3,7 @@ using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
 using ELE.Core.Systems;
-using GenericModConfigMenu;
+using ELE.Core.Integrations;
 using HarmonyLib;
 
 namespace ELE.Core
