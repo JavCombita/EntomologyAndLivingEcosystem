@@ -1,5 +1,6 @@
 using System;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics; // <--- NECESARIO
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
@@ -12,6 +13,11 @@ namespace ELE.Core
     public class ModEntry : Mod
     {
         public static ModEntry Instance { get; private set; }
+        
+        // --- NUEVO: Textura Estática para acceso global desde el Patch ---
+        public static Texture2D ShelterTexture { get; private set; }
+        // ---------------------------------------------------------------
+
         public ModConfig Config { get; private set; }
         
         // Sistemas
@@ -23,6 +29,17 @@ namespace ELE.Core
         {
             Instance = this;
             this.Config = helper.ReadConfig<ModConfig>();
+
+            // --- 1. CARGAR TEXTURA DEL SHELTER ---
+            try 
+            {
+                ShelterTexture = helper.ModContent.Load<Texture2D>("assets/ladybug_shelter_anim.png");
+            }
+            catch (Exception ex)
+            {
+                this.Monitor.Log($"Failed to load shelter texture: {ex}", LogLevel.Error);
+            }
+            // -------------------------------------
 
             // Inicializar Sistemas
             this.Ecosystem = new EcosystemManager(this);
@@ -50,13 +67,7 @@ namespace ELE.Core
             helper.Events.Input.ButtonPressed += OnButtonPressed;
 
             // --- COMANDOS DE CONSOLA (DEBUG) ---
-            
-            // 1. Forzar Plaga de Cultivos
-            // Uso: escribe 'ele_pest' en la consola
             helper.ConsoleCommands.Add("ele_pest", "Forces a pest invasion on crops.", this.OnPestCommand);
-
-            // 2. Forzar Invasión de Monstruos
-            // Uso: escribe 'ele_invasion' en la consola
             helper.ConsoleCommands.Add("ele_invasion", "Forces a monster invasion in Town.", this.OnInvasionCommand);
         }
 
@@ -79,7 +90,6 @@ namespace ELE.Core
         {
             if (!Context.IsWorldReady) return;
 
-            // A. Detección de Input (PC Clic Derecho / Android Toque)
             bool isAction = e.Button.IsActionButton();
             bool isAndroidTap = Constants.TargetPlatform == GamePlatform.Android && e.Button == SButton.MouseLeft;
 
@@ -88,22 +98,15 @@ namespace ELE.Core
             Vector2 clickedTile = e.Cursor.Tile;
             GameLocation location = Game1.currentLocation;
 
-            // B. Buscar Objeto (Lógica Cabeza y Pies)
             StardewValley.Object obj = location.getObjectAtTile((int)clickedTile.X, (int)clickedTile.Y);
 
             if (obj == null)
             {
-                // Si clickeaste el techo (aire), revisa el tile de abajo (pies)
-                // Esto es vital para BigCraftables de 2 tiles de alto como el Shelter.
                 obj = location.getObjectAtTile((int)clickedTile.X, (int)clickedTile.Y + 1);
             }
 
-            // C. Si es el Ladybug Shelter
             if (obj != null && obj.ItemId == "JavCombita.ELE_LadybugShelter")
             {
-                // --- CHEQUEO DE HERRAMIENTAS ---
-                // Si tienes Hacha, Pico o Azada, asumimos que quieres quitarlo.
-                // Salimos (return) para dejar que el juego use la herramienta.
                 Item currentItem = Game1.player.CurrentItem;
                 if (currentItem is StardewValley.Tools.Axe || 
                     currentItem is StardewValley.Tools.Pickaxe || 
@@ -112,15 +115,11 @@ namespace ELE.Core
                     return; 
                 }
 
-                // --- CHEQUEO DE DISTANCIA ---
-                // Solo mostrar mensaje si estás cerca (1.5 tiles = adyacente o diagonal cercana).
-                // En Android, esto hará que el personaje camine hacia el objeto si está lejos.
                 if (Vector2.Distance(Game1.player.Tile, obj.TileLocation) > 1.5f)
                 {
                     return; 
                 }
 
-                // --- MOSTRAR ESTADO ---
                 string key = "JavCombita.ELE/PestCount";
                 int count = 0;
                 if (obj.modData.TryGetValue(key, out string countStr))
@@ -129,8 +128,6 @@ namespace ELE.Core
                 }
 
                 Game1.drawObjectDialogue(this.Helper.Translation.Get("message.shelter_status", new { count = count }));
-                
-                // Suprimimos el clic para evitar golpes accidentales (si no tiene herramienta de demolición)
                 this.Helper.Input.Suppress(e.Button);
             }
         }
@@ -139,25 +136,15 @@ namespace ELE.Core
 
         private void OnDayStarted(object sender, DayStartedEventArgs e)
         {
-            if (this.Config.EnableNutrientCycle)
-            {
-                this.Ecosystem.CalculateDailyNutrients();
-            }
-            
+            if (this.Config.EnableNutrientCycle) this.Ecosystem.CalculateDailyNutrients();
             this.Migration.CheckMigrationStatus();
             CheckAndSendRobinMail();
         }
 
         private void CheckAndSendRobinMail()
         {
-            // ID debe coincidir EXACTAMENTE con el de content.json
             string mailId = "JavCombita.ELE_RobinShelterMail";
-
-            // Si ya tiene la carta, salimos
-            if (Game1.player.mailReceived.Contains(mailId) || Game1.player.mailbox.Contains(mailId)) 
-                return;
-
-            // Condición: 3 Corazones con Robin
+            if (Game1.player.mailReceived.Contains(mailId) || Game1.player.mailbox.Contains(mailId)) return;
             if (Game1.player.getFriendshipHeartLevelForNPC("Robin") >= 3)
             {
                 Game1.player.mailbox.Add(mailId);
@@ -168,18 +155,8 @@ namespace ELE.Core
         private void OnUpdateTicked(object sender, UpdateTickedEventArgs e)
         {
             if (!Context.IsWorldReady) return;
-
-            // Revisar plagas cada segundo (aprox 60 ticks)
-            if (e.IsMultipleOf(60) && this.Config.EnablePestInvasions)
-            {
-                this.Ecosystem.UpdatePests();
-            }
-
-            // IA de Monstruos cada cuarto de segundo (15 ticks)
-            if (e.IsMultipleOf(15) && this.Config.EnableMonsterMigration)
-            {
-                this.Migration.UpdateMigratingMonsters();
-            }
+            if (e.IsMultipleOf(60) && this.Config.EnablePestInvasions) this.Ecosystem.UpdatePests();
+            if (e.IsMultipleOf(15) && this.Config.EnableMonsterMigration) this.Migration.UpdateMigratingMonsters();
         }
 
         private void OnGameLaunched(object sender, GameLaunchedEventArgs e)
@@ -193,9 +170,8 @@ namespace ELE.Core
                 save: () => this.Helper.WriteConfig(this.Config)
             );
 
-            // Sección General
+            // Configuración General
             configMenu.AddSectionTitle(mod: this.ModManifest, text: () => this.Helper.Translation.Get("config.section.general"));
-            
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
                 name: () => this.Helper.Translation.Get("config.enableInvasions"),
@@ -203,7 +179,6 @@ namespace ELE.Core
                 getValue: () => this.Config.EnablePestInvasions,
                 setValue: value => this.Config.EnablePestInvasions = value
             );
-
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
                 name: () => this.Helper.Translation.Get("config.enableMigration"),
@@ -211,7 +186,6 @@ namespace ELE.Core
                 getValue: () => this.Config.EnableMonsterMigration,
                 setValue: value => this.Config.EnableMonsterMigration = value
             );
-
             configMenu.AddTextOption(
                 mod: this.ModManifest,
                 name: () => this.Helper.Translation.Get("config.invasionDifficulty"),
@@ -221,7 +195,6 @@ namespace ELE.Core
                 allowedValues: new string[] { "Easy", "Medium", "Hard", "VeryHard" },
                 formatAllowedValue: value => this.Helper.Translation.Get($"difficulty.{value.ToLower()}")
             );
-
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
                 name: () => this.Helper.Translation.Get("config.daysBeforeInvasion"),
@@ -231,9 +204,8 @@ namespace ELE.Core
                 min: 5, max: 100
             );
 
-            // Sección Nutrientes
+            // Configuración Nutrientes
             configMenu.AddSectionTitle(mod: this.ModManifest, text: () => this.Helper.Translation.Get("config.section.nutrients"));
-
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
                 name: () => this.Helper.Translation.Get("config.enableNutrients"),
@@ -241,7 +213,6 @@ namespace ELE.Core
                 getValue: () => this.Config.EnableNutrientCycle,
                 setValue: value => this.Config.EnableNutrientCycle = value
             );
-
             configMenu.AddNumberOption(
                 mod: this.ModManifest,
                 name: () => this.Helper.Translation.Get("config.depletionMultiplier"),
@@ -251,9 +222,8 @@ namespace ELE.Core
                 min: 0.1f, max: 5.0f
             );
 
-            // Sección Visuales
+            // Configuración Visuales
             configMenu.AddSectionTitle(mod: this.ModManifest, text: () => this.Helper.Translation.Get("config.section.visuals"));
-
             configMenu.AddBoolOption(
                 mod: this.ModManifest,
                 name: () => this.Helper.Translation.Get("config.showOverlay"),
