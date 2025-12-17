@@ -24,7 +24,7 @@ jobs:
       run: dotnet restore
 
     - name: Build Core (Release Mode)
-      run: dotnet build ELE/ELE_Core.csproj --configuration Release --no-restore /p:EnableModDeploy=false
+      run: dotnet build ELE/ELE.csproj --configuration Release --no-restore /p:EnableModDeploy=false
 
     - name: Create Release Structure
       run: |
@@ -54,7 +54,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: EntomologyAndLivingEcosystem
-        # CAMBIO CLAVE AQUÍ:
-        # Antes: path: release/EntomologyAndLivingEcosystem/ (Tomaba el contenido suelto)
-        # Ahora: path: release/ (Toma la carpeta contenedora 'EntomologyAndLivingEcosystem')
         path: release/
