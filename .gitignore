@@ -1,0 +1,15 @@
+# Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo
+[Bb]in/
+[Oo]bj/
+
+# Windows / Mac OS
+Thumbs.db
+.DS_Store
+
+# Build results
+releases/
+*_Release.zip

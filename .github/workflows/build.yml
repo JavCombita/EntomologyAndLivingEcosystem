@@ -1,0 +1,63 @@
+name: Compile and Package Mod
+
+on:
+  push:
+    branches: [ "main", "master", "develop" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  # Permite ejecutarlo manualmente desde la pestaña Actions
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 6.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build Core (Release Mode)
+      # /p:EnableModDeploy=false evita que intente copiar al juego (que no existe en el servidor de GitHub)
+      run: dotnet build ELE_Core/ELE_Core.csproj --configuration Release --no-restore /p:EnableModDeploy=false
+
+    - name: Create Release Structure
+      run: |
+        mkdir -p release/EntomologyLivingEcosystem/"[C#] ELE Core"
+        mkdir -p release/EntomologyLivingEcosystem/"[CP] ELE Content"
+
+    - name: Package Core Module
+      run: |
+        # Copiar DLL compilada
+        cp ELE_Core/bin/Release/net6.0/ELE_Core.dll release/EntomologyLivingEcosystem/"[C#] ELE Core"/
+        # Copiar Manifest e i18n
+        cp ELE_Core/manifest.json release/EntomologyLivingEcosystem/"[C#] ELE Core"/
+        cp -r ELE_Core/i18n release/EntomologyLivingEcosystem/"[C#] ELE Core"/
+        # Copiar assets si el core tuviera (opcional, por ahora no tiene)
+        # cp -r ELE_Core/assets release/EntomologyLivingEcosystem/"[C#] ELE Core"/ || true
+
+    - name: Package Content Patcher Module
+      run: |
+        # Copiar todo el contenido de la carpeta CP
+        cp ELE_Content/manifest.json release/EntomologyLivingEcosystem/"[CP] ELE Content"/
+        cp ELE_Content/content.json release/EntomologyLivingEcosystem/"[CP] ELE Content"/
+        cp -r ELE_Content/assets release/EntomologyLivingEcosystem/"[CP] ELE Content"/
+        cp -r ELE_Content/i18n release/EntomologyLivingEcosystem/"[CP] ELE Content"/
+
+    - name: Zip Mod
+      run: |
+        cd release
+        zip -r ELE_Mod_Release.zip EntomologyLivingEcosystem
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ELE_Mod_Release
+        path: release/ELE_Mod_Release.zip
