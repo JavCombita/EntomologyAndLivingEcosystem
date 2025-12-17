@@ -136,7 +136,7 @@ namespace ELE.Core.Systems
                                     position: targetTile * 64f,
                                     flipped: false, alphaFade: 0f, color: Color.White)
                                 {
-                                    motion = new Vector2((float)Game1.random.NextDouble() - 0.5f, -1f),
+                                    motion = Vector2.Zero,
                                     scale = 4f, 
                                     interval = 100f, 
                                     totalNumberOfLoops = 20,
@@ -251,7 +251,7 @@ namespace ELE.Core.Systems
             
             this.scale = 4f;
             this.layerDepth = 1f;
-            this.motion = new Vector2((float)Game1.random.NextDouble() - 0.5f, -0.5f);
+            this.motion = Vector2.Zero;
         }
 
         public override bool update(GameTime time)
