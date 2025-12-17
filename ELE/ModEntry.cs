@@ -50,35 +50,52 @@ namespace ELE.Core
             helper.Events.Input.ButtonPressed += OnButtonPressed;
         }
 
-        // --- MANEJADOR DE CLICS (PC + ANDROID + BIG CRAFTABLES) ---
+        // --- MANEJADOR DE CLICS (PC + ANDROID + DISTANCIA + HERRAMIENTAS) ---
         private void OnButtonPressed(object sender, ButtonPressedEventArgs e)
         {
             if (!Context.IsWorldReady) return;
 
-            // 1. DETECCIÓN DE BOTÓN
-            // En PC queremos Clic Derecho (Action).
-            // En Android, el toque suele ser Clic Izquierdo (MouseLeft), así que lo permitimos también.
+            // 1. DETECCIÓN DE BOTÓN (PC + Android)
             bool isAction = e.Button.IsActionButton();
             bool isAndroidTap = Constants.TargetPlatform == GamePlatform.Android && e.Button == SButton.MouseLeft;
 
             if (!isAction && !isAndroidTap) return;
 
-            // 2. OBTENER TILE CLICKEADO
             Vector2 clickedTile = e.Cursor.Tile;
             GameLocation location = Game1.currentLocation;
 
-            // 3. BUSCAR OBJETO (Lógica inteligente de "Cabeza y Pies")
+            // 2. BUSCAR OBJETO (Lógica "Cabeza y Pies")
             StardewValley.Object obj = location.getObjectAtTile((int)clickedTile.X, (int)clickedTile.Y);
 
-            // Si le diste al techo (vacío), revisa los pies (Y + 1)
             if (obj == null)
             {
+                // Si le diste al techo (vacío), revisa los pies (Y + 1)
                 obj = location.getObjectAtTile((int)clickedTile.X, (int)clickedTile.Y + 1);
             }
 
-            // 4. SI ES NUESTRO SHELTER
+            // 3. SI ES NUESTRO SHELTER
             if (obj != null && obj.ItemId == "JavCombita.ELE_LadybugShelter")
             {
+                // --- A. CHEQUEO DE HERRAMIENTA (Axe, Pickaxe, Hoe) ---
+                // Si el jugador tiene una de estas herramientas, asumimos que quiere usarla (golpear/romper)
+                // y no leer el mensaje.
+                Item currentItem = Game1.player.CurrentItem;
+                if (currentItem is StardewValley.Tools.Axe || 
+                    currentItem is StardewValley.Tools.Pickaxe || 
+                    currentItem is StardewValley.Tools.Hoe) // <--- ¡Hoe agregado!
+                {
+                    return; // Salimos para dejar que el juego use la herramienta
+                }
+
+                // --- B. CHEQUEO DE DISTANCIA ---
+                // Calculamos la distancia entre el Jugador y el Shelter.
+                // 1.5 tiles permite interactuar desde casillas adyacentes y diagonales cercanas.
+                if (Vector2.Distance(Game1.player.Tile, obj.TileLocation) > 1.5f)
+                {
+                    return; // Si está muy lejos, salimos (permitiendo que el jugador camine hacia allá en Android)
+                }
+                // -------------------------------------
+
                 string key = "JavCombita.ELE/PestCount";
                 int count = 0;
                 
@@ -87,12 +104,9 @@ namespace ELE.Core
                     int.TryParse(countStr, out count);
                 }
 
-                // Mostrar mensaje
                 Game1.drawObjectDialogue(this.Helper.Translation.Get("message.shelter_status", new { count = count }));
                 
-                // CRUCIAL PARA ANDROID:
-                // "Suppress" cancela el clic original. Esto evita que el jugador
-                // golpee el Shelter con el hacha accidentalmente al tocarlo para leer.
+                // Suprimimos el clic solo si cumplió todas las condiciones (cerca y sin herramienta peligrosa)
                 this.Helper.Input.Suppress(e.Button);
             }
         }
