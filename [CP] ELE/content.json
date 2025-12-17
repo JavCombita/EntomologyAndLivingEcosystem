@@ -46,8 +46,7 @@
                     "Description": "{{i18n:item.shelter.description}}",
                     "Price": 1000,
                     "Texture": "Mods/JavCombita/ELE/Shelter", 
-                    "SpriteIndex": 0, 
-                    "WobbleWhileWorking": true,
+                    "SpriteIndex": 0,
                     "Fragility": 0, 
                     "ContextTags": ["not_giftable"]
                 }
