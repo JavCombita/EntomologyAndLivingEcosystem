@@ -48,8 +48,7 @@
                     "Texture": "Mods/JavCombita/ELE/Shelter", 
                     "SpriteIndex": 0, 
                     "WobbleWhileWorking": true,
-                    // Fragility 2 es clave para poder recogerlo con herramientas
-                    "Fragility": 2, 
+                    "Fragility": 0, 
                     "ContextTags": ["not_giftable"]
                 }
             }
