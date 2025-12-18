@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework;
 using StardewModdingAPI;
+using StardewModdingAPI.Events; // <--- FALTABA ESTO
 using StardewValley;
 using StardewValley.Monsters;
 using StardewValley.Locations;
