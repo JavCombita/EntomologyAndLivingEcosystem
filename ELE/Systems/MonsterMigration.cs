@@ -1,145 +1,191 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
-using ELE.Core.Systems;
-using ELE.Core.Integrations;
-using HarmonyLib;
+using StardewValley.Monsters;
+using StardewValley.Locations;
 
-namespace ELE.Core
+namespace ELE.Core.Systems
 {
-    public class ModEntry : Mod
+    public class MonsterMigration
     {
-        public static ModEntry Instance { get; private set; }
-        
-        // Texturas Globales
-        public static Texture2D ShelterTexture { get; private set; }
-        public static Texture2D PestTexture { get; private set; }
+        private readonly ModEntry Mod;
+        private bool IsInvasionActive = false;
+        private Point? FarmHouseDoor = null;
 
-        public ModConfig Config { get; private set; }
-        
-        // Sistemas
-        public EcosystemManager Ecosystem { get; private set; }
-        public MonsterMigration Migration { get; private set; }
-        public RenderingSystem Renderer { get; private set; }
-        public MachineLogic Machines { get; private set; }
-
-        public override void Entry(IModHelper helper)
+        public MonsterMigration(ModEntry mod)
         {
-            Instance = this;
-            this.Config = helper.ReadConfig<ModConfig>();
-
-            LoadAssets();
-            InitializeSystems();
-            RegisterEvents();
-            RegisterConsoleCommands();
-
-            // Harmony
-            var harmony = new Harmony(this.ModManifest.UniqueID);
-            harmony.PatchAll();
+            this.Mod = mod;
         }
 
-        private void LoadAssets()
+        public void CheckMigrationStatus()
         {
-            try 
+            IsInvasionActive = false;
+            if (!this.Mod.Config.EnableMonsterMigration) return;
+
+            if (Game1.isFestival() || Game1.eventUp || Game1.weddingToday) return;
+            if (Game1.stats.DaysPlayed < this.Mod.Config.DaysBeforeTownInvasion) return;
+
+            double chance = 0.05 + (Game1.player.CombatLevel * 0.01);
+            
+            if (Game1.random.NextDouble() < chance)
             {
-                ShelterTexture = Helper.ModContent.Load<Texture2D>("assets/ladybug_shelter_anim.png");
+                StartInvasion();
+            }
+        }
+
+        public void ForceInvasion()
+        {
+            Mod.Monitor.Log("Forcing Monster Invasion...", LogLevel.Alert);
+            StartInvasion();
+        }
+
+        private void StartInvasion()
+        {
+            IsInvasionActive = true;
+            Game1.addHUDMessage(new HUDMessage(this.Mod.Helper.Translation.Get("notification.farm_invasion"), 2));
+            
+            Farm farm = Game1.getFarm();
+            
+            // Stardew 1.6 Helper para encontrar la puerta
+            FarmHouseDoor = farm.GetMainFarmHouseEntry();
+
+            int mobCount = GetMobCountByDifficulty();
+            Mod.Monitor.Log($"[ELE] Spawning {mobCount} monsters on Farm.", LogLevel.Info);
+
+            for(int i=0; i<mobCount; i++)
+            {
+                SpawnMonster(farm);
+            }
+        }
+        
+        private void SpawnMonster(Farm farm)
+        {
+            Vector2 spawnTile = Vector2.Zero;
+            bool found = false;
+            
+            for (int attempt = 0; attempt < 15; attempt++)
+            {
+                int x = Game1.random.Next(0, farm.Map.Layers[0].LayerWidth);
+                int y = Game1.random.Next(0, farm.Map.Layers[0].LayerHeight);
                 
-                if (Helper.ModContent.DoesAssetExist<Texture2D>("assets/pest_anim.png"))
+                // Preferir bordes (lógica simple: 50% de probabilidad de forzar un borde X o Y)
+                if (Game1.random.NextDouble() < 0.5) 
+                    x = (Game1.random.NextDouble() < 0.5) ? Game1.random.Next(0, 5) : Game1.random.Next(farm.Map.Layers[0].LayerWidth - 5, farm.Map.Layers[0].LayerWidth);
+                else
+                    y = (Game1.random.NextDouble() < 0.5) ? Game1.random.Next(0, 5) : Game1.random.Next(farm.Map.Layers[0].LayerHeight - 5, farm.Map.Layers[0].LayerHeight);
+
+                spawnTile = new Vector2(x, y);
+                
+                // Reemplazo manual de IsTileLocationTotallyClearAndPlaceable
+                if (IsValidSpawnPosition(farm, spawnTile))
                 {
-                    PestTexture = Helper.ModContent.Load<Texture2D>("assets/pest_anim.png");
+                    found = true;
+                    break;
                 }
             }
-            catch (Exception ex)
+
+            if (found)
             {
-                Monitor.Log($"[ELE] Failed to load textures: {ex.Message}", LogLevel.Error);
+                Monster monster = null;
+                Vector2 pos = spawnTile * 64f;
+                int combatLevel = Game1.player.CombatLevel;
+
+                if (combatLevel < 3) monster = new GreenSlime(pos);
+                else if (combatLevel < 6) monster = (Game1.random.NextDouble() < 0.5) ? new GreenSlime(pos) : (Monster)new Bat(pos);
+                else monster = (Game1.random.NextDouble() < 0.3) ? new GreenSlime(pos) : (Game1.random.NextDouble() < 0.5 ? (Monster)new Bat(pos) : (Monster)new Ghost(pos));
+
+                if (monster != null)
+                {
+                    monster.focusedOnFarmers = true;
+                    monster.wildernessFarmMonster = true;
+                    farm.characters.Add(monster);
+                }
             }
         }
 
-        private void InitializeSystems()
+        // Helper manual robusto para verificar spawn
+        private bool IsValidSpawnPosition(GameLocation location, Vector2 tile)
         {
-            this.Ecosystem = new EcosystemManager(this);
-            this.Migration = new MonsterMigration(this);
-            this.Renderer = new RenderingSystem(this);
-            // Inicializamos la lógica de máquinas (Spreader)
-            this.Machines = new MachineLogic(this);
+            // 1. Verificar colisiones (muros, acantilados)
+            if (!location.isTilePassable(new xTile.Dimensions.Location((int)tile.X, (int)tile.Y), Game1.viewport))
+                return false;
+
+            // 2. Verificar si hay edificios, cultivos o personajes
+            if (location.isTileOccupied(tile))
+                return false;
+
+            // 3. Verificar agua
+            if (location.isWaterTile((int)tile.X, (int)tile.Y))
+                return false;
+
+            return true;
+        }
+        
+        private int GetMobCountByDifficulty()
+        {
+            switch(this.Mod.Config.InvasionDifficulty)
+            {
+                case "Easy": return 3;
+                case "Hard": return 12;
+                case "VeryHard": return 20;
+                default: return 7;
+            }
         }
 
-        private void RegisterEvents()
+        public void UpdateInvasionLogic(TimeChangedEventArgs e)
         {
-            Helper.Events.GameLoop.DayStarted += OnDayStarted;
-            Helper.Events.GameLoop.GameLaunched += OnGameLaunched;
-            Helper.Events.GameLoop.TimeChanged += OnTimeChanged;
-        }
-
-        private void RegisterConsoleCommands()
-        {
-            Helper.ConsoleCommands.Add("ele_invasion", "Forces a monster invasion on the farm immediately.\nUsage: ele_invasion", (cmd, args) => 
-            {
-                if (!Context.IsWorldReady) return;
-                this.Migration.ForceInvasion();
-            });
-
-            Helper.ConsoleCommands.Add("ele_pest", "Forces pest spawn on nearby crops.\nUsage: ele_pest", (cmd, args) => 
-            {
-                if (!Context.IsWorldReady) return;
-                this.Ecosystem.ForcePestAttack();
-            });
+            if (!IsInvasionActive || Game1.currentLocation is not Farm farm) return;
             
-            Helper.ConsoleCommands.Add("ele_status", "Shows current nutrient levels of tile under cursor.", (cmd, args) =>
+            int monsterCount = farm.characters.Count(c => c is Monster);
+            
+            if (monsterCount == 0 && e.NewTime > 630) 
             {
-                 if (!Context.IsWorldReady) return;
-                 var tile = Game1.currentCursorTile;
-                 var data = this.Ecosystem.GetSoilDataAt(Game1.currentLocation, tile);
-                 Monitor.Log($"Tile {tile}: N={data.Nitrogen} P={data.Phosphorus} K={data.Potassium}", LogLevel.Alert);
-            });
-        }
+                IsInvasionActive = false;
+                Game1.addHUDMessage(new HUDMessage(this.Mod.Helper.Translation.Get("notification.invasion_cleared"), 1));
+                return;
+            }
 
-        private void OnGameLaunched(object sender, GameLaunchedEventArgs e)
-        {
-            var configMenu = this.Helper.ModRegistry.GetApi<IGenericModConfigMenuApi>("spacechase0.GenericModConfigMenu");
-            if (configMenu != null)
+            if (FarmHouseDoor.HasValue)
             {
-                configMenu.Register(ModManifest, () => Config = new ModConfig(), () => Helper.WriteConfig(Config));
-                
-                // General
-                configMenu.AddSectionTitle(ModManifest, () => Helper.Translation.Get("config.section.general"));
-                configMenu.AddBoolOption(ModManifest, () => Config.EnablePestInvasions, val => Config.EnablePestInvasions = val, () => Helper.Translation.Get("config.enableInvasions"));
-                configMenu.AddBoolOption(ModManifest, () => Config.EnableMonsterMigration, val => Config.EnableMonsterMigration = val, () => Helper.Translation.Get("config.enableMigration"));
-                
-                // Difficulty
-                // CORRECCIÓN: Se pasa 'null' como tooltip (argumento 5) para que el array de strings sea el argumento 6
-                configMenu.AddTextOption(
-                    ModManifest, 
-                    () => Config.InvasionDifficulty, 
-                    val => Config.InvasionDifficulty = val, 
-                    () => Helper.Translation.Get("config.invasionDifficulty"), 
-                    null, 
-                    new[] { "Easy", "Medium", "Hard", "VeryHard" }
-                );
-                
-                // Nutrients
-                configMenu.AddSectionTitle(ModManifest, () => Helper.Translation.Get("config.section.nutrients"));
-                configMenu.AddBoolOption(ModManifest, () => Config.EnableNutrientCycle, val => Config.EnableNutrientCycle = val, () => Helper.Translation.Get("config.enableNutrients"));
+                Vector2 targetPixels = new Vector2(FarmHouseDoor.Value.X, FarmHouseDoor.Value.Y) * 64f;
+
+                foreach(var npc in farm.characters)
+                {
+                    if (npc is Monster monster)
+                    {
+                        // IA Manual: Si está lejos, forzar movimiento hacia la puerta
+                        if (Vector2.Distance(monster.Position, Game1.player.Position) > 600f)
+                        {
+                            MoveMonsterToward(monster, targetPixels);
+                        }
+                    }
+                }
             }
         }
 
-        private void OnDayStarted(object sender, DayStartedEventArgs e)
+        // Movimiento vectorial manual (reemplaza a SetMovingTowardPoint)
+        private void MoveMonsterToward(Monster monster, Vector2 target)
         {
-            if (Context.IsMainPlayer) 
-            {
-                this.Ecosystem.CalculateDailyNutrients();
-                this.Migration.CheckMigrationStatus();
-            }
-        }
+            Vector2 position = monster.Position;
+            Vector2 trajectory = target - position;
 
-        private void OnTimeChanged(object sender, TimeChangedEventArgs e)
-        {
-            if (Context.IsMainPlayer)
+            if (trajectory.Length() > 4f)
             {
-                this.Migration.UpdateInvasionLogic(e);
+                trajectory.Normalize();
+                // Velocidad base moderada
+                float speed = 2f; 
+                monster.xVelocity = trajectory.X * speed;
+                monster.yVelocity = trajectory.Y * speed;
+
+                // Actualizar dirección visual
+                if (Math.Abs(trajectory.X) > Math.Abs(trajectory.Y))
+                    monster.faceDirection(trajectory.X > 0 ? 1 : 3);
+                else
+                    monster.faceDirection(trajectory.Y > 0 ? 2 : 0);
             }
         }
     }
