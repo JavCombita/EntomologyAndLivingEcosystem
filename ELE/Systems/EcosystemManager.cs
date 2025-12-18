@@ -15,6 +15,7 @@ namespace ELE.Core.Systems
         private readonly ModEntry Mod;
         private readonly IMonitor Monitor;
         private const string SoilDataKey = "JavCombita.ELE/SoilData";
+        private const string BoosterAppliedKey = "JavCombita.ELE/BoosterApplied"; 
         private const string LadybugShelterId = "JavCombita.ELE_LadybugShelter";
 
         public EcosystemManager(ModEntry mod)
@@ -85,6 +86,11 @@ namespace ELE.Core.Systems
 
             SaveSoilDataAt(location, tile, data);
 
+            if (dirt.crop == null)
+            {
+                location.modData.Remove($"{BoosterAppliedKey}/{tile.X},{tile.Y}");
+            }
+
             if (data.Potassium < 50)
             {
                 TrySpawnPests(location, tile, dirt);
@@ -111,7 +117,6 @@ namespace ELE.Core.Systems
             
             if (IsProtectedByShelter(location, tile)) 
             {
-                // Corrección: Usar Reflection para acceder a 'Game1.multiplayer'
                 var multiplayer = this.Mod.Helper.Reflection.GetField<Multiplayer>(typeof(Game1), "multiplayer").GetValue();
                 multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite(362, 30f, 1, 1, tile * 64f, false, false){ color = Color.Cyan, scale = 4f });
                 return;
@@ -135,7 +140,6 @@ namespace ELE.Core.Systems
                 dirt.crop = null; 
                 Game1.playSound("cut");
                 
-                // Corrección: Usar Reflection para acceder a 'Game1.multiplayer'
                 var multiplayer = this.Mod.Helper.Reflection.GetField<Multiplayer>(typeof(Game1), "multiplayer").GetValue();
                 multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite(362, 30f, 1, 1, tile * 64f, false, false){ color = Color.DarkGreen });
                 
@@ -178,6 +182,28 @@ namespace ELE.Core.Systems
 
         public void RestoreNutrients(GameLocation location, Vector2 tile, string fertilizerId)
         {
+            bool isBooster = fertilizerId.StartsWith("JavCombita.ELE_Fertilizer");
+            string boosterKey = $"{BoosterAppliedKey}/{tile.X},{tile.Y}";
+            
+            if (isBooster)
+            {
+                bool hasApplied = location.modData.TryGetValue(boosterKey, out string appliedType);
+                bool isOmni = fertilizerId.Contains("Omni");
+
+                if (hasApplied)
+                {
+                     if (isOmni && !appliedType.Contains("Omni")) 
+                     {
+                        // Permitir reemplazo
+                     }
+                     else 
+                     {
+                        return; 
+                     }
+                }
+                location.modData[boosterKey] = fertilizerId;
+            }
+
             SoilData data = GetSoilDataAt(location, tile);
             
             switch (fertilizerId)

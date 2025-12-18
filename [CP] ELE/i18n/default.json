@@ -5,14 +5,41 @@
   "item.shelter.description": "Protects crops in a 6-tile radius from pests.",
   
   "item.fert_n.name": "Nitrogen Booster",
-  "item.fert_n.desc": "Rich in Nitrogen. Essential for leafy growth.",
+  "item.fert_n.desc": "Rich in Nitrogen.",
   "item.fert_p.name": "Phosphorus Booster",
-  "item.fert_p.desc": "Rich in Phosphorus. Promotes strong roots.",
+  "item.fert_p.desc": "Rich in Phosphorus.",
   "item.fert_k.name": "Potassium Booster",
-  "item.fert_k.desc": "Rich in Potassium. Protects against pests.",
+  "item.fert_k.desc": "Rich in Potassium.",
   "item.fert_omni.name": "Omni-Nutrient Mix",
   "item.fert_omni.desc": "The ultimate soil food. Fully restores NPK.",
   
   "item.spreader.name": "Nutrient Spreader",
-  "item.spreader.desc": "Automates fertilization. Place a chest with fertilizer above it. Each morning, it spreads 1 fertilizer to a 7x7 area."
+  "item.spreader.desc": "Automates fertilization (5x5 area). Input: Chest above.",
+  "item.spreader_mk2.name": "Nutrient Spreader Mk2",
+  "item.spreader_mk2.desc": "Improved range (7x7 area). Input: Chest above.",
+  "item.spreader_mk3.name": "Nutrient Spreader Mk3",
+  "item.spreader_mk3.desc": "Advanced range (9x9 area). Input: Chest above.",
+  "item.spreader_omega.name": "Nutrient Spreader Omega",
+  "item.spreader_omega.desc": "Ultimate range (15x15 area). Input: Chest above.",
+
+  "mail.robin_shelter.title": "Old Blueprints",
+  "mail.robin_shelter.body": "Hey @,^I found these old blueprints for a 'Ladybug Shelter' in the attic. My grandfather swore by them to keep pests away naturally.^I'm selling the recipe at the shop now if you want to try it out!^   - Robin",
+
+  "mail.clint_analyzer.title": "Soil Contamination?",
+  "mail.clint_analyzer.body": "Hello @,^I've noticed something disturbing in the soil samples lately. It seems the runoff from the old Joja distribution center is affecting the valley's nutrients.^Pierre and I worked on a prototype to measure this 'NPK' sickness. I have the recipe available at the Blacksmith's shop. You should check your soil often.^   - Clint",
+
+  "mail.pierre_spreader.title": "Ultimate Farming Tech!",
+  "mail.pierre_spreader.body": "Congratulations on your farming success, @!^Since you're such a valued customer, I wanted to share my latest invention. It spreads fertilizer automatically!^Just don't tell Morris I gave you this for free...^   - Pierre",
+
+  "mail.qi_upgrades.title": "Beyond Limits",
+  "mail.qi_upgrades.body": "I see you have begun automating your farm, @.^Pierre's device is charming, but limited. If you wish to reach true perfection, you must push nature further.^I have enclosed blueprints for advanced modification. Use them wisely.^   - Mr. Qi",
+
+  "mail.demetrius_n.title": "Nitrogen Study",
+  "mail.demetrius_n.body": "Greetings!^Following Clint's report on soil depletion, I've isolated a compound to restore Nitrogen levels using common Sap.^Here is the formula. It should help with leafy growth.^   - Demetrius",
+
+  "mail.evelyn_p.title": "A gardening tip",
+  "mail.evelyn_p.body": "Dear @,^George told me about the soil troubles. Back in my day, we used clay to help roots grow strong.^I wrote down how we used to mix it to boost Phosphorus. Hope it helps, dear!^   - Granny Evelyn",
+
+  "mail.jodi_k.title": "Potassium trick",
+  "mail.jodi_k.body": "Hi there!^I heard you're fighting pollution on the farm. Kent taught me that fiber can be processed to restore Potassium.^We need to keep our valley clean! Here's how you make it.^   - Jodi"
 }

@@ -14,13 +14,11 @@ namespace ELE.Core
     {
         public static ModEntry Instance { get; private set; }
         
-        // Texturas Globales
         public static Texture2D ShelterTexture { get; private set; }
         public static Texture2D PestTexture { get; private set; }
 
         public ModConfig Config { get; private set; }
         
-        // Sistemas
         public EcosystemManager Ecosystem { get; private set; }
         public MonsterMigration Migration { get; private set; }
         public RenderingSystem Renderer { get; private set; }
@@ -36,7 +34,6 @@ namespace ELE.Core
             RegisterEvents();
             RegisterConsoleCommands();
 
-            // Harmony
             var harmony = new Harmony(this.ModManifest.UniqueID);
             harmony.PatchAll();
         }
@@ -63,7 +60,6 @@ namespace ELE.Core
             this.Ecosystem = new EcosystemManager(this);
             this.Migration = new MonsterMigration(this);
             this.Renderer = new RenderingSystem(this);
-            // Inicializamos la lógica de máquinas (Spreader)
             this.Machines = new MachineLogic(this);
         }
 
@@ -104,13 +100,10 @@ namespace ELE.Core
             {
                 configMenu.Register(ModManifest, () => Config = new ModConfig(), () => Helper.WriteConfig(Config));
                 
-                // General
                 configMenu.AddSectionTitle(ModManifest, () => Helper.Translation.Get("config.section.general"));
                 configMenu.AddBoolOption(ModManifest, () => Config.EnablePestInvasions, val => Config.EnablePestInvasions = val, () => Helper.Translation.Get("config.enableInvasions"));
                 configMenu.AddBoolOption(ModManifest, () => Config.EnableMonsterMigration, val => Config.EnableMonsterMigration = val, () => Helper.Translation.Get("config.enableMigration"));
                 
-                // Difficulty
-                // CORRECCIÓN: Se pasa 'null' como tooltip (argumento 5) para que el array de strings sea el argumento 6
                 configMenu.AddTextOption(
                     ModManifest, 
                     () => Config.InvasionDifficulty, 
@@ -120,7 +113,6 @@ namespace ELE.Core
                     new[] { "Easy", "Medium", "Hard", "VeryHard" }
                 );
                 
-                // Nutrients
                 configMenu.AddSectionTitle(ModManifest, () => Helper.Translation.Get("config.section.nutrients"));
                 configMenu.AddBoolOption(ModManifest, () => Config.EnableNutrientCycle, val => Config.EnableNutrientCycle = val, () => Helper.Translation.Get("config.enableNutrients"));
             }

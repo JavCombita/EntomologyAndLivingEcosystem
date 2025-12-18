@@ -2,28 +2,24 @@
     "Format": "2.8.0",
     "Changes": [
         // ============================================================
-        // 1. CARGA DE ASSETS (Imágenes)
+        // 1. CARGA DE ASSETS
         // ============================================================
         {
-            "LogName": "Load Analyzer Texture",
             "Action": "Load",
             "Target": "Mods/JavCombita/ELE/Analyzer",
             "FromFile": "assets/soil_analyzer.png"
         },
         {
-            "LogName": "Load Shelter Texture",
             "Action": "Load",
             "Target": "Mods/JavCombita/ELE/Shelter",
             "FromFile": "assets/ladybug_shelter.png"
         },
         {
-            "LogName": "Load Spreader Texture",
             "Action": "Load",
             "Target": "Mods/JavCombita/ELE/Spreader",
             "FromFile": "assets/nutrient_spreader.png"
         },
         {
-            "LogName": "Load Fertilizers Texture",
             "Action": "Load",
             "Target": "Mods/JavCombita/ELE/Fertilizers",
             "FromFile": "assets/fertilizers_sheet.png"
@@ -31,38 +27,32 @@
 
         // ============================================================
         // 2. DEFINICIÓN DE ITEMS (Data/Objects)
-        // Incluye: Soil Analyzer y los 4 Fertilizantes nuevos
         // ============================================================
         {
-            "LogName": "Define Objects (Analyzer & Fertilizers)",
             "Action": "EditData",
             "Target": "Data/Objects",
             "Entries": {
-                // Herramienta de Análisis
                 "JavCombita.ELE_SoilAnalyzer": {
                     "Name": "Soil Analyzer",
                     "DisplayName": "{{i18n:item.analyzer.name}}",
                     "Description": "{{i18n:item.analyzer.description}}",
                     "Type": "Basic",
-                    "Category": -99, // Tool-like
+                    "Category": -99,
                     "Price": 500,
                     "Texture": "Mods/JavCombita/ELE/Analyzer", 
-                    "SpriteIndex": 0,
-                    "ContextTags": ["not_giftable", "color_yellow"]
+                    "SpriteIndex": 0
                 },
-                // Fertilizante de Nitrógeno
                 "JavCombita.ELE_Fertilizer_N": {
                     "Name": "Nitrogen Booster",
                     "DisplayName": "{{i18n:item.fert_n.name}}",
                     "Description": "{{i18n:item.fert_n.desc}}",
                     "Type": "Basic",
-                    "Category": -19, // Fertilizer Category
+                    "Category": -19,
                     "Price": 100,
                     "Texture": "Mods/JavCombita/ELE/Fertilizers",
                     "SpriteIndex": 0,
-                    "ContextTags": ["item_fertilizer", "color_green"]
+                    "ContextTags": ["item_fertilizer"]
                 },
-                // Fertilizante de Fósforo
                 "JavCombita.ELE_Fertilizer_P": {
                     "Name": "Phosphorus Booster",
                     "DisplayName": "{{i18n:item.fert_p.name}}",
@@ -72,9 +62,8 @@
                     "Price": 100,
                     "Texture": "Mods/JavCombita/ELE/Fertilizers",
                     "SpriteIndex": 1,
-                    "ContextTags": ["item_fertilizer", "color_orange"]
+                    "ContextTags": ["item_fertilizer"]
                 },
-                // Fertilizante de Potasio
                 "JavCombita.ELE_Fertilizer_K": {
                     "Name": "Potassium Booster",
                     "DisplayName": "{{i18n:item.fert_k.name}}",
@@ -84,9 +73,8 @@
                     "Price": 100,
                     "Texture": "Mods/JavCombita/ELE/Fertilizers",
                     "SpriteIndex": 2,
-                    "ContextTags": ["item_fertilizer", "color_brown"]
+                    "ContextTags": ["item_fertilizer"]
                 },
-                // Mezcla Omni (Todos)
                 "JavCombita.ELE_Fertilizer_Omni": {
                     "Name": "Omni-Nutrient Mix",
                     "DisplayName": "{{i18n:item.fert_omni.name}}",
@@ -96,21 +84,18 @@
                     "Price": 500,
                     "Texture": "Mods/JavCombita/ELE/Fertilizers",
                     "SpriteIndex": 3,
-                    "ContextTags": ["item_fertilizer", "color_purple"]
+                    "ContextTags": ["item_fertilizer"]
                 }
             }
         },
 
         // ============================================================
-        // 3. DEFINICIÓN DE MÁQUINAS Y EDIFICIOS (Data/BigCraftables)
-        // Incluye: Ladybug Shelter y Nutrient Spreader
+        // 3. DEFINICIÓN DE MÁQUINAS (Data/BigCraftables)
         // ============================================================
         {
-            "LogName": "Define Big Craftables",
             "Action": "EditData",
             "Target": "Data/BigCraftables",
             "Entries": {
-                // Refugio de Mariquitas
                 "JavCombita.ELE_LadybugShelter": {
                     "Name": "Ladybug Shelter",
                     "DisplayName": "{{i18n:item.shelter.name}}",
@@ -120,7 +105,7 @@
                     "SpriteIndex": 0,
                     "ContextTags": ["not_giftable", "wood_item"]
                 },
-                // Esparcidor de Nutrientes
+                // BASE: Radio 5x5
                 "JavCombita.ELE_NutrientSpreader": {
                     "Name": "Nutrient Spreader",
                     "DisplayName": "{{i18n:item.spreader.name}}",
@@ -129,71 +114,141 @@
                     "Texture": "Mods/JavCombita/ELE/Spreader",
                     "SpriteIndex": 0,
                     "ContextTags": ["not_giftable", "machine"]
+                },
+                // MK2: Radio 7x7
+                "JavCombita.ELE_NutrientSpreader_Mk2": {
+                    "Name": "Nutrient Spreader Mk2",
+                    "DisplayName": "{{i18n:item.spreader_mk2.name}}",
+                    "Description": "{{i18n:item.spreader_mk2.desc}}",
+                    "Price": 6000,
+                    "Texture": "Mods/JavCombita/ELE/Spreader",
+                    "SpriteIndex": 0, 
+                    "ContextTags": ["not_giftable", "machine"]
+                },
+                // MK3: Radio 9x9
+                "JavCombita.ELE_NutrientSpreader_Mk3": {
+                    "Name": "Nutrient Spreader Mk3",
+                    "DisplayName": "{{i18n:item.spreader_mk3.name}}",
+                    "Description": "{{i18n:item.spreader_mk3.desc}}",
+                    "Price": 10000,
+                    "Texture": "Mods/JavCombita/ELE/Spreader",
+                    "SpriteIndex": 0, 
+                    "ContextTags": ["not_giftable", "machine"]
+                },
+                // OMEGA: Radio 15x15
+                "JavCombita.ELE_NutrientSpreader_Omega": {
+                    "Name": "Nutrient Spreader Omega",
+                    "DisplayName": "{{i18n:item.spreader_omega.name}}",
+                    "Description": "{{i18n:item.spreader_omega.desc}}",
+                    "Price": 20000,
+                    "Texture": "Mods/JavCombita/ELE/Spreader",
+                    "SpriteIndex": 0, 
+                    "ContextTags": ["not_giftable", "machine"]
                 }
             }
         },
 
         // ============================================================
-        // 4. RECETAS DE CRAFTEO (Data/CraftingRecipes)
+        // 4. RECETAS DE CRAFTEO
         // ============================================================
         {
-            "LogName": "Define Crafting Recipes",
             "Action": "EditData",
             "Target": "Data/CraftingRecipes",
             "Entries": {
-                // Analyzer: Iron Bar (335) x5, Copper Bar (334) x2
-                "Soil Analyzer": "335 5 334 2/Home/JavCombita.ELE_SoilAnalyzer/false/null",
+                // Shelter: 100 Wood, 50 Hardwood, 4 Iron Bar, 20 Copper Bar
+                "Ladybug Shelter": "388 100 709 50 335 4 334 20/Home/JavCombita.ELE_LadybugShelter/false/null",
                 
-                // Shelter: Wood (388) x70, Hardwood (709) x30
-                "Ladybug Shelter": "388 70 709 30/Home/JavCombita.ELE_LadybugShelter/false/null",
+                // Analyzer: 4 Iron Bar, 10 Copper Bar, 5 Coal (382)
+                "Soil Analyzer": "335 4 334 10 382 5/Home/JavCombita.ELE_SoilAnalyzer/false/null",
                 
-                // Spreader: Iron Bar (335) x10, Copper Bar (334) x5, Iridium Bar (337) x1
-                "Nutrient Spreader": "335 10 334 5 337 1/Home/JavCombita.ELE_NutrientSpreader/false/null",
+                // Spreader Base: 5 Iridium, 5 Gold, 20 Iron, 25 Solar Essence, Wood/Hardwood
+                "Nutrient Spreader": "337 5 336 5 335 20 768 25 388 100 709 50/Home/JavCombita.ELE_NutrientSpreader/false/null",
 
-                // Nitrogen Booster: Sap (92) x20
+                // Upgrade Mk2 (7x7): Requires Base + 5 Iridium + 10 Refined Quartz (338)
+                "Nutrient Spreader Mk2": "JavCombita.ELE_NutrientSpreader 1 337 5 338 10/Home/JavCombita.ELE_NutrientSpreader_Mk2/false/null",
+
+                // Upgrade Mk3 (9x9): Requires Mk2 + 1 Prismatic Shard (896) + 20 Cinder Shard (848)
+                "Nutrient Spreader Mk3": "JavCombita.ELE_NutrientSpreader_Mk2 1 896 1 848 20/Home/JavCombita.ELE_NutrientSpreader_Mk3/false/null",
+
+                // Upgrade Omega (15x15): Requires Mk3 + 1 Prismatic Shard + 5 Radioactive Bar (910)
+                "Nutrient Spreader Omega": "JavCombita.ELE_NutrientSpreader_Mk3 1 896 1 910 5/Home/JavCombita.ELE_NutrientSpreader_Omega/false/null",
+
+                // Boosters
                 "Nitrogen Booster": "92 20/Field/JavCombita.ELE_Fertilizer_N/false/null",
-                
-                // Phosphorus Booster: Clay (330) x2
                 "Phosphorus Booster": "330 2/Field/JavCombita.ELE_Fertilizer_P/false/null",
-                
-                // Potassium Booster: Fiber (152) x20
                 "Potassium Booster": "152 20/Field/JavCombita.ELE_Fertilizer_K/false/null",
                 
-                // Omni Mix: 1 N + 1 P + 1 K
-                "Omni-Nutrient Mix": "JavCombita.ELE_Fertilizer_N 1 JavCombita.ELE_Fertilizer_P 1 JavCombita.ELE_Fertilizer_K 1/Field/JavCombita.ELE_Fertilizer_Omni/false/null"
+                // Omni Mix: Farming 7 unlock
+                "Omni-Nutrient Mix": "JavCombita.ELE_Fertilizer_N 1 JavCombita.ELE_Fertilizer_P 1 JavCombita.ELE_Fertilizer_K 1/Field/JavCombita.ELE_Fertilizer_Omni/false/Farming 7"
             }
         },
 
         // ============================================================
-        // 5. TIENDAS Y CORREO (Integración en el Mundo)
+        // 5. CONTENIDO DE CORREOS
         // ============================================================
         {
-            "LogName": "Add Shelter to Robin Shop",
-            "Action": "EditData",
-            "Target": "Data/Shops",
-            "TargetField": ["Carpenter", "Items"],
-            "Entries": {
-                // Vende el item ya construido (opcional, caro)
-                "JavCombita.ELE_LadybugShelter_Item": {
-                    "Id": "JavCombita.ELE_LadybugShelter",
-                    "ItemId": "JavCombita.ELE_LadybugShelter", 
-                    "Price": 4000, // Precio aumentado por conveniencia
-                    "IgnoreShopPriceModifiers": true
-                }
-            }
-        },
-        // Correo de Robin desbloqueando la receta
-        {
-            "LogName": "Add Mail Content",
             "Action": "EditData",
             "Target": "Data/mail",
             "Entries": {
-                "JavCombita.ELE_RobinShelterMail": "{{i18n:mail.robin_shelter.body}}[#]{{i18n:mail.robin_shelter.title}}"
+                "JavCombita.ELE_RobinShelterMail": "{{i18n:mail.robin_shelter.body}}[#]{{i18n:mail.robin_shelter.title}}",
+                "JavCombita.ELE_ClintAnalyzerMail": "{{i18n:mail.clint_analyzer.body}}[#]{{i18n:mail.clint_analyzer.title}}",
+                
+                // Pierre sends ONLY Base Spreader recipe
+                "JavCombita.ELE_PierreSpreaderMail": "{{i18n:mail.pierre_spreader.body}}[#]{{i18n:mail.pierre_spreader.title}}%item craftingRecipe Nutrient Spreader %%",
+
+                // Mr. Qi sends the UPGRADES
+                "JavCombita.ELE_QiUpgradeMail": "{{i18n:mail.qi_upgrades.body}}[#]{{i18n:mail.qi_upgrades.title}}%item craftingRecipe Nutrient Spreader Mk2 %%item craftingRecipe Nutrient Spreader Mk3 %%item craftingRecipe Nutrient Spreader Omega %%",
+
+                "JavCombita.ELE_DemetriusBoosterMail": "{{i18n:mail.demetrius_n.body}}[#]{{i18n:mail.demetrius_n.title}}%item craftingRecipe Nitrogen Booster %%",
+                "JavCombita.ELE_EvelynBoosterMail": "{{i18n:mail.evelyn_p.body}}[#]{{i18n:mail.evelyn_p.title}}%item craftingRecipe Phosphorus Booster %%",
+                "JavCombita.ELE_JodiBoosterMail": "{{i18n:mail.jodi_k.body}}[#]{{i18n:mail.jodi_k.title}}%item craftingRecipe Potassium Booster %%"
             }
         },
-        // Receta condicional en la tienda de Robin (requiere haber leído el correo)
+
+        // ============================================================
+        // 6. LÓGICA DE ENTREGA DE CORREOS (Trigger Actions 1.6)
+        // ============================================================
         {
-            "LogName": "Add Recipe to Robin (Conditional)",
+            "Action": "EditData",
+            "Target": "Data/TriggerActions",
+            "Entries": {
+                "JavCombita.ELE_DeliverRobin": {
+                    "Trigger": "DayStarted",
+                    "Condition": "!PLAYER_HAS_MAIL Current JavCombita.ELE_RobinShelterMail, DAYS_PLAYED 2",
+                    "Actions": ["AddMail Current JavCombita.ELE_RobinShelterMail"]
+                },
+                "JavCombita.ELE_DeliverClint": {
+                    "Trigger": "DayStarted",
+                    "Condition": "!PLAYER_HAS_MAIL Current JavCombita.ELE_ClintAnalyzerMail, DAYS_PLAYED 5",
+                    "Actions": ["AddMail Current JavCombita.ELE_ClintAnalyzerMail"]
+                },
+                "JavCombita.ELE_DeliverPierre": {
+                    "Trigger": "DayStarted",
+                    "Condition": "!PLAYER_HAS_MAIL Current JavCombita.ELE_PierreSpreaderMail, PLAYER_SKILL Current Farming 8, RELATIONSHIP Pierre 2000",
+                    "Actions": ["AddMail Current JavCombita.ELE_PierreSpreaderMail"]
+                },
+                // Mr. Qi delivers upgrades IF player has Pierre's mail
+                "JavCombita.ELE_DeliverQi": {
+                    "Trigger": "DayStarted",
+                    "Condition": "!PLAYER_HAS_MAIL Current JavCombita.ELE_QiUpgradeMail, PLAYER_HAS_MAIL Current JavCombita.ELE_PierreSpreaderMail",
+                    "Actions": ["AddMail Current JavCombita.ELE_QiUpgradeMail"]
+                },
+                "JavCombita.ELE_DeliverBoosters": {
+                    "Trigger": "DayStarted",
+                    "Condition": "PLAYER_HAS_MAIL Current JavCombita.ELE_ClintAnalyzerMail",
+                    "Actions": [
+                        "AddMail Current JavCombita.ELE_DemetriusBoosterMail",
+                        "AddMail Current JavCombita.ELE_EvelynBoosterMail",
+                        "AddMail Current JavCombita.ELE_JodiBoosterMail"
+                    ]
+                }
+            }
+        },
+
+        // ============================================================
+        // 7. TIENDAS
+        // ============================================================
+        {
             "Action": "EditData",
             "Target": "Data/Shops",
             "TargetField": ["Carpenter", "Items"],
@@ -202,8 +257,22 @@
                     "Id": "JavCombita.ELE_LadybugShelter_Recipe",
                     "ItemId": "JavCombita.ELE_LadybugShelter", 
                     "IsRecipe": true,
-                    "Price": 500,
+                    "Price": 2000,
                     "Condition": "PLAYER_HAS_MAIL Current JavCombita.ELE_RobinShelterMail"
+                }
+            }
+        },
+        {
+            "Action": "EditData",
+            "Target": "Data/Shops",
+            "TargetField": ["Blacksmith", "Items"],
+            "Entries": {
+                "JavCombita.ELE_Analyzer_Recipe": {
+                    "Id": "JavCombita.ELE_Analyzer_Recipe",
+                    "ItemId": "JavCombita.ELE_SoilAnalyzer", 
+                    "IsRecipe": true,
+                    "Price": 500,
+                    "Condition": "PLAYER_HAS_MAIL Current JavCombita.ELE_ClintAnalyzerMail"
                 }
             }
         }

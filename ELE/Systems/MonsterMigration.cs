@@ -49,8 +49,6 @@ namespace ELE.Core.Systems
             Game1.addHUDMessage(new HUDMessage(this.Mod.Helper.Translation.Get("notification.farm_invasion"), 2));
             
             Farm farm = Game1.getFarm();
-            
-            // Stardew 1.6 Helper para encontrar la puerta
             FarmHouseDoor = farm.GetMainFarmHouseEntry();
 
             int mobCount = GetMobCountByDifficulty();
@@ -72,7 +70,6 @@ namespace ELE.Core.Systems
                 int x = Game1.random.Next(0, farm.Map.Layers[0].LayerWidth);
                 int y = Game1.random.Next(0, farm.Map.Layers[0].LayerHeight);
                 
-                // Preferir bordes (lógica simple: 50% de probabilidad de forzar un borde X o Y)
                 if (Game1.random.NextDouble() < 0.5) 
                     x = (Game1.random.NextDouble() < 0.5) ? Game1.random.Next(0, 5) : Game1.random.Next(farm.Map.Layers[0].LayerWidth - 5, farm.Map.Layers[0].LayerWidth);
                 else
@@ -80,7 +77,6 @@ namespace ELE.Core.Systems
 
                 spawnTile = new Vector2(x, y);
                 
-                // Reemplazo manual de IsTileLocationTotallyClearAndPlaceable
                 if (IsValidSpawnPosition(farm, spawnTile))
                 {
                     found = true;
@@ -107,20 +103,14 @@ namespace ELE.Core.Systems
             }
         }
 
-        // Helper manual robusto para verificar spawn
         private bool IsValidSpawnPosition(GameLocation location, Vector2 tile)
         {
-            // 1. Verificar colisiones (muros, acantilados)
             if (!location.isTilePassable(new xTile.Dimensions.Location((int)tile.X, (int)tile.Y), Game1.viewport))
                 return false;
 
-            // 2. Objetos (Piedras, Madera, Cofres)
             if (location.objects.ContainsKey(tile)) return false;
-
-            // 3. TerrainFeatures (Cultivos, Arboles, Pisos)
             if (location.terrainFeatures.ContainsKey(tile)) return false;
 
-            // 4. Large Terrain Features (Arbustos, Meteoritos)
             Rectangle tileRect = new Rectangle((int)tile.X * 64, (int)tile.Y * 64, 64, 64);
             if (location.largeTerrainFeatures != null)
             {
@@ -130,18 +120,15 @@ namespace ELE.Core.Systems
                 }
             }
 
-            // 5. Personajes (Jugador, NPCs, otros monstruos)
             if (Game1.player.Tile == tile) return false;
             foreach (var npc in location.characters)
             {
                 if (npc.Tile == tile) return false;
             }
 
-            // 6. Verificar agua
             if (location.isWaterTile((int)tile.X, (int)tile.Y))
                 return false;
             
-            // 7. Edificios (Solo si es Farm) - Chequeo manual de coordenadas
             if (location is Farm farm)
             {
                 foreach(var building in farm.buildings)
@@ -155,7 +142,6 @@ namespace ELE.Core.Systems
                         return false;
                 }
             }
-
             return true;
         }
         
@@ -191,7 +177,6 @@ namespace ELE.Core.Systems
                 {
                     if (npc is Monster monster)
                     {
-                        // IA Manual: Si está lejos, forzar movimiento hacia la puerta
                         if (Vector2.Distance(monster.Position, Game1.player.Position) > 600f)
                         {
                             MoveMonsterToward(monster, targetPixels);
@@ -201,7 +186,6 @@ namespace ELE.Core.Systems
             }
         }
 
-        // Movimiento vectorial manual (reemplaza a SetMovingTowardPoint)
         private void MoveMonsterToward(Monster monster, Vector2 target)
         {
             Vector2 position = monster.Position;
@@ -210,12 +194,10 @@ namespace ELE.Core.Systems
             if (trajectory.Length() > 4f)
             {
                 trajectory.Normalize();
-                // Velocidad base moderada
                 float speed = 2f; 
                 monster.xVelocity = trajectory.X * speed;
                 monster.yVelocity = trajectory.Y * speed;
 
-                // Actualizar dirección visual
                 if (Math.Abs(trajectory.X) > Math.Abs(trajectory.Y))
                     monster.faceDirection(trajectory.X > 0 ? 1 : 3);
                 else
