@@ -1,10 +1,18 @@
 {
   "item.analyzer.name": "Soil Analyzer",
-  "item.analyzer.description": "A high-tech device to measure NPK levels in the soil. Hold it to visualize soil health.",
-  
+  "item.analyzer.description": "Reads NPK levels.",
   "item.shelter.name": "Ladybug Shelter",
-  "item.shelter.description": "A small house for beneficial insects. Protects nearby crops (6 tile radius) from pest invasions.",
-
-  "mail.robin_shelter.title": "Old Blueprints found!",
-  "mail.robin_shelter.body": "Hey @,^I was dusting off some old shelves in the shop and found these blueprints for a 'Ladybug Shelter'.^My grandfather used to make them to keep pests away without chemicals. I think it would be perfect for your ecosystem project!^Stop by the shop if you want the recipe.^^   - Robin"
+  "item.shelter.description": "Protects crops in a 6-tile radius from pests.",
+  
+  "item.fert_n.name": "Nitrogen Booster",
+  "item.fert_n.desc": "Rich in Nitrogen. Essential for leafy growth.",
+  "item.fert_p.name": "Phosphorus Booster",
+  "item.fert_p.desc": "Rich in Phosphorus. Promotes strong roots.",
+  "item.fert_k.name": "Potassium Booster",
+  "item.fert_k.desc": "Rich in Potassium. Protects against pests.",
+  "item.fert_omni.name": "Omni-Nutrient Mix",
+  "item.fert_omni.desc": "The ultimate soil food. Fully restores NPK.",
+  
+  "item.spreader.name": "Nutrient Spreader",
+  "item.spreader.desc": "Automates fertilization. Place a chest with fertilizer above it. Each morning, it spreads 1 fertilizer to a 7x7 area."
 }

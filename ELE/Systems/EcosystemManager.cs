@@ -15,7 +15,6 @@ namespace ELE.Core.Systems
         private readonly ModEntry Mod;
         private readonly IMonitor Monitor;
         private const string SoilDataKey = "JavCombita.ELE/SoilData";
-        private const string PestCountKey = "JavCombita.ELE/PestCount";
         private const string LadybugShelterId = "JavCombita.ELE_LadybugShelter";
 
         public EcosystemManager(ModEntry mod)
@@ -29,6 +28,8 @@ namespace ELE.Core.Systems
             foreach (GameLocation location in Game1.locations)
             {
                 if (!location.IsFarm && !location.Name.Contains("Greenhouse")) continue;
+                
+                // Iterar sobre una copia para poder modificar colecciones si fuera necesario
                 var terrainFeatures = location.terrainFeatures.Pairs.ToList();
                 foreach (var pair in terrainFeatures)
                 {
@@ -39,217 +40,200 @@ namespace ELE.Core.Systems
             this.Monitor.Log("Daily soil analysis completed.", LogLevel.Trace);
         }
 
-        private void ProcessCropNutrients(GameLocation location, Vector2 tile, HoeDirt dirt)
+        // Método de Debug
+        public void ForcePestAttack()
         {
-            Crop crop = dirt.crop;
-            SoilData soil = GetSoilDataAt(location, tile);
-            float multiplier = this.Mod.Config.NutrientDepletionMultiplier;
-            float stageFactor = (crop.currentPhase.Value + 1) * 0.5f;
-            int neighbors = GetMonocultureScore(location, tile, crop);
-            float competitionFactor = 1.0f + (neighbors * 0.1f);
-            float nDrain = 1.5f * multiplier * stageFactor * competitionFactor;
-            float pDrain = 1.0f * multiplier * stageFactor * competitionFactor;
-            float kDrain = 0.8f * multiplier * stageFactor * competitionFactor;
-            soil.Nitrogen -= nDrain; soil.Phosphorus -= pDrain; soil.Potassium -= kDrain;
-            soil.Nitrogen = Math.Clamp(soil.Nitrogen, 0f, 100f);
-            soil.Phosphorus = Math.Clamp(soil.Phosphorus, 0f, 100f);
-            soil.Potassium = Math.Clamp(soil.Potassium, 0f, 100f);
-            SaveSoilDataAt(location, tile, soil);
-        }
-
-        public void UpdatePests()
-        {
-            if (Game1.currentLocation == null || (!Game1.currentLocation.IsFarm && !Game1.currentLocation.Name.Contains("Greenhouse"))) return;
-            if (Game1.eventUp || Game1.isFestival()) return;
+            Monitor.Log("Forcing Pest Attack on nearby crops...", LogLevel.Alert);
+            GameLocation loc = Game1.currentLocation;
+            Vector2 playerTile = Game1.player.Tile;
             
-            if (Game1.random.NextDouble() < 0.05) SpawnPestNearPlayer(Game1.currentLocation, isForced: false);
-        }
-
-        public void ForcePestInvasion()
-        {
-            if (Game1.currentLocation == null) return;
-            this.Monitor.Log("🐜 DEBUG: Forcing pest invasion (Ignoring nutrients)...", LogLevel.Warn);
-            SpawnPestNearPlayer(Game1.currentLocation, isForced: true);
-        }
-
-        private void SpawnPestNearPlayer(GameLocation location, bool isForced = false)
-        {
-            Vector2 playerPos = Game1.player.Tile;
-            bool cropFound = false;
-            
-            for (int x = -5; x <= 5; x++)
+            // Buscar cultivos cercanos al jugador
+            int attempts = 0;
+            foreach (var pair in loc.terrainFeatures.Pairs)
             {
-                for (int y = -5; y <= 5; y++)
+                if (pair.Value is HoeDirt dirt && dirt.crop != null && Vector2.Distance(pair.Key, playerTile) < 5)
                 {
-                    Vector2 targetTile = new Vector2(playerPos.X + x, playerPos.Y + y);
-                    
-                    if (location.terrainFeatures.TryGetValue(targetTile, out TerrainFeature tf) && tf is HoeDirt dirt && dirt.crop != null)
-                    {
-                        cropFound = true;
-
-                        // 1. CHEQUEO DE ACTIVIDAD
-                        if (IsPestActiveAt(location, targetTile)) continue;
-
-                        // 2. SHELTER CHECK (Defensa)
-                        StardewValley.Object protector = GetProtectorShelter(location, targetTile);
-                        if (protector != null)
-                        {
-                            int currentCount = 0;
-                            if (protector.modData.TryGetValue(PestCountKey, out string countStr)) int.TryParse(countStr, out currentCount);
-                            currentCount++;
-                            protector.modData[PestCountKey] = currentCount.ToString();
-                            location.temporarySprites.Add(new TemporaryAnimatedSprite(5, targetTile * 64f, Color.Cyan) { scale = 0.5f });
-                            return; // Bloqueado
-                        }
-
-                        // 3. ATAQUE
-                        SoilData soil = GetSoilDataAt(location, targetTile);
-                        float dangerThreshold = 50f; 
-
-                        if (soil.Potassium < dangerThreshold || isForced)
-                        {
-                            // A) EFECTO VISUAL (Tu Plaga)
-                            if (ModEntry.PestTexture != null)
-                                location.temporarySprites.Add(new VerticalPestSprite(ModEntry.PestTexture, targetTile * 64f));
-                            else
-                                location.temporarySprites.Add(new TemporaryAnimatedSprite("LooseSprites\\Cursors", new Rectangle(381, 1342, 10, 10), targetTile * 64f, false, 0f, Color.White) { motion = Vector2.Zero, scale = 4f, interval = 100f, totalNumberOfLoops = 20, animationLength = 4 });
-                            
-                            // B) CONSECUENCIA 1: DAÑO AL SUELO (La plaga come nutrientes)
-                            soil.Nitrogen -= 25f;
-                            soil.Phosphorus -= 25f;
-                            soil.Potassium -= 25f;
-                            // Aseguramos que no baje de 0
-                            soil.Nitrogen = Math.Max(0, soil.Nitrogen);
-                            soil.Phosphorus = Math.Max(0, soil.Phosphorus);
-                            soil.Potassium = Math.Max(0, soil.Potassium);
-                            SaveSoilDataAt(location, targetTile, soil);
-
-                            this.Monitor.Log($"🐜 PEST ATTACK! Nutrients drained at {targetTile}", LogLevel.Warn);
-
-                            // C) CONSECUENCIA 2: MUERTE DEL CULTIVO
-                            if (isForced || Game1.random.NextDouble() < 0.30)
-                            {
-                                location.playSound("cut"); 
-                                Game1.createRadialDebris(location, 12, (int)targetTile.X, (int)targetTile.Y, 6, false);
-
-                                // CORRECCIÓN AQUÍ: destroyCrop en 1.6 solo necesita (bool showAnimation)
-                                dirt.destroyCrop(true);
-                                
-                                this.Monitor.Log("💀 CROP DESTROYED by Pest!", LogLevel.Alert);
-                            }
-                            
-                            return; // Solo ataca una planta por ciclo
-                        }
-                    }
+                    SpawnPest(loc, pair.Key, dirt, true); // True = Force
+                    attempts++;
+                    if (attempts >= 3) break;
                 }
             }
-            if (!cropFound && isForced) this.Monitor.Log("❌ No crops found nearby.", LogLevel.Error);
         }
 
-        private bool IsPestActiveAt(GameLocation location, Vector2 tile)
+        private void ProcessCropNutrients(GameLocation location, Vector2 tile, HoeDirt dirt)
         {
-            Vector2 positionToCheck = tile * 64f;
-            foreach (var sprite in location.temporarySprites)
+            if (!this.Mod.Config.EnableNutrientCycle) return;
+
+            SoilData data = GetSoilDataAt(location, tile);
+            
+            // Lógica de Monocultivo: Verificar vecinos
+            int similarNeighbors = CountSimilarNeighbors(location, tile, dirt.crop.indexOfHarvest.Value);
+            float monoculturePenalty = 1.0f + (similarNeighbors * 0.1f); // 10% extra drain per neighbor
+
+            float consumption = 2.0f * this.Mod.Config.NutrientDepletionMultiplier * monoculturePenalty;
+            
+            // Drenaje según fase
+            if (dirt.crop.currentPhase.Value < dirt.crop.phaseDays.Count - 1)
             {
-                if (sprite is VerticalPestSprite && Vector2.Distance(sprite.position, positionToCheck) < 10f) return true;
-                if (sprite.textureName == "LooseSprites\\Cursors" && sprite.sourceRect.X == 381 && Vector2.Distance(sprite.position, positionToCheck) < 10f) return true;
+                data.Nitrogen -= consumption * 1.5f;     
+                data.Phosphorus -= consumption * 0.5f;
+            }
+            else
+            {
+                data.Phosphorus -= consumption * 1.5f;   
+                data.Potassium -= consumption * 1.2f;
+            }
+
+            // Normalizar límites
+            data.Nitrogen = Math.Max(0, data.Nitrogen);
+            data.Phosphorus = Math.Max(0, data.Phosphorus);
+            data.Potassium = Math.Max(0, data.Potassium);
+
+            SaveSoilDataAt(location, tile, data);
+
+            // Trigger de Plagas: Si Potasio (K) < 50
+            if (data.Potassium < 50)
+            {
+                TrySpawnPests(location, tile, dirt);
+            }
+        }
+
+        private int CountSimilarNeighbors(GameLocation location, Vector2 tile, string cropIndex)
+        {
+            int count = 0;
+            Vector2[] offsets = { new(1,0), new(-1,0), new(0,1), new(0,-1) };
+            foreach(var off in offsets)
+            {
+                if(location.terrainFeatures.TryGetValue(tile + off, out TerrainFeature tf) && tf is HoeDirt neighbor && neighbor.crop != null)
+                {
+                    if (neighbor.crop.indexOfHarvest.Value == cropIndex) count++;
+                }
+            }
+            return count;
+        }
+
+        private void TrySpawnPests(GameLocation location, Vector2 tile, HoeDirt dirt, bool forced = false)
+        {
+            if (!this.Mod.Config.EnablePestInvasions && !forced) return;
+            
+            // Chequeo de Shelter
+            if (IsProtectedByShelter(location, tile)) 
+            {
+                // Efecto visual de "Bloqueo" (Cian explosion)
+                Game1.multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite(362, 30f, 1, 1, tile * 64f, false, false){ color = Color.Cyan, scale = 4f });
+                return;
+            }
+
+            // Probabilidad de aparición (5%)
+            if (forced || Game1.random.NextDouble() < 0.05)
+            {
+                SpawnPest(location, tile, dirt, forced);
+            }
+        }
+
+        private void SpawnPest(GameLocation location, Vector2 tile, HoeDirt dirt, bool forced)
+        {
+            // Visual FX (Nube de insectos persistente como animación temporal)
+            if (ModEntry.PestTexture != null)
+            {
+                 location.temporarySprites.Add(new VerticalPestSprite(ModEntry.PestTexture, tile * 64f));
+            }
+
+            // MECÁNICA: Muerte súbita vs Drenaje
+            // 30% chance de muerte (o 100% si es forzado para probar)
+            if (forced || Game1.random.NextDouble() < 0.30) 
+            {
+                dirt.crop = null; // Muerte
+                Game1.playSound("cut");
+                Game1.multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite(362, 30f, 1, 1, tile * 64f, false, false){ color = Color.DarkGreen }); // Hojas volando
+                
+                // Mensaje solo una vez por día para no spammear
+                if (!forced) Game1.addHUDMessage(new HUDMessage(this.Mod.Helper.Translation.Get("notification.pest_damage"), 3));
+            }
+            else
+            {
+                // Drenaje masivo de nutrientes (La plaga come)
+                SoilData data = GetSoilDataAt(location, tile);
+                data.Nitrogen = Math.Max(0, data.Nitrogen - 20);
+                data.Phosphorus = Math.Max(0, data.Phosphorus - 20);
+                SaveSoilDataAt(location, tile, data);
+            }
+        }
+
+        private bool IsProtectedByShelter(GameLocation location, Vector2 tile)
+        {
+            foreach (var pair in location.objects.Pairs)
+            {
+                if (pair.Value.ItemId == LadybugShelterId)
+                {
+                    if (Vector2.Distance(tile, pair.Key) <= 6) return true;
+                }
             }
             return false;
         }
 
-        private int GetMonocultureScore(GameLocation location, Vector2 centerTile, Crop centerCrop)
-        {
-            int score = 0;
-            for (int x = -1; x <= 1; x++)
-            {
-                for (int y = -1; y <= 1; y++)
-                {
-                    if (x == 0 && y == 0) continue; 
-                    Vector2 neighborTile = new Vector2(centerTile.X + x, centerTile.Y + y);
-                    if (location.terrainFeatures.TryGetValue(neighborTile, out TerrainFeature tf) && tf is HoeDirt dirt && dirt.crop != null)
-                    {
-                        if (dirt.crop.indexOfHarvest.Value == centerCrop.indexOfHarvest.Value) score++;
-                    }
-                }
-            }
-            return score;
-        }
-
-        private StardewValley.Object GetProtectorShelter(GameLocation location, Vector2 targetTile)
-        {
-            int radius = 6;
-            for (int x = -radius; x <= radius; x++)
-            {
-                for (int y = -radius; y <= radius; y++)
-                {
-                    Vector2 checkTile = new Vector2(targetTile.X + x, targetTile.Y + y);
-                    if (location.Objects.TryGetValue(checkTile, out StardewValley.Object obj))
-                    {
-                        if (obj.ItemId == LadybugShelterId) return obj;
-                    }
-                }
-            }
-            return null;
-        }
-
+        // --- Data Persistence ---
         public SoilData GetSoilDataAt(GameLocation location, Vector2 tile)
         {
-            string key = $"{SoilDataKey}_{tile.X}_{tile.Y}";
-            if (location.modData.TryGetValue(key, out string rawData)) return SoilData.FromString(rawData);
+            if (location.modData.TryGetValue($"{SoilDataKey}/{tile.X},{tile.Y}", out string dataStr))
+            {
+                return SoilData.FromString(dataStr);
+            }
             return new SoilData(); 
         }
 
         public void SaveSoilDataAt(GameLocation location, Vector2 tile, SoilData data)
         {
-            string key = $"{SoilDataKey}_{tile.X}_{tile.Y}";
-            location.modData[key] = data.ToString();
+            location.modData[$"{SoilDataKey}/{tile.X},{tile.Y}"] = data.ToString();
         }
 
         public void RestoreNutrients(GameLocation location, Vector2 tile, string fertilizerId)
         {
             SoilData data = GetSoilDataAt(location, tile);
-            float heavyBoost = 50f; float lightBoost = 10f;
+            
+            // Soporte para IDs nuevos (Strings en 1.6)
             switch (fertilizerId)
             {
-                case "465": case "466": case "HyperSpeedGro": data.Nitrogen += heavyBoost; data.Phosphorus += lightBoost; data.Potassium += lightBoost; break;
-                case "368": data.Nitrogen += lightBoost; data.Phosphorus += heavyBoost; data.Potassium += lightBoost; break;
-                case "369": case "919": data.Nitrogen += lightBoost; data.Phosphorus += lightBoost; data.Potassium += heavyBoost; break;
-                default: data.Nitrogen += 20f; data.Phosphorus += 20f; data.Potassium += 20f; break;
+                case "(O)368": case "368": // Basic
+                    data.Nitrogen += 30f; break;
+                case "(O)369": case "369": // Quality
+                    data.Nitrogen += 60f; data.Phosphorus += 30f; break;
+                // --- NUEVOS FERTILIZANTES DE ELE ---
+                case "JavCombita.ELE_Fertilizer_N": 
+                    data.Nitrogen += 80f; break;
+                case "JavCombita.ELE_Fertilizer_P": 
+                    data.Phosphorus += 80f; break;
+                case "JavCombita.ELE_Fertilizer_K": 
+                    data.Potassium += 80f; break;
+                case "JavCombita.ELE_Fertilizer_Omni": 
+                    data.Nitrogen = 100f; data.Phosphorus = 100f; data.Potassium = 100f; break;
+                    
+                default: data.Nitrogen += 15f; data.Phosphorus += 15f; data.Potassium += 15f; break;
             }
-            data.Nitrogen = Math.Min(data.Nitrogen, 100f); data.Phosphorus = Math.Min(data.Phosphorus, 100f); data.Potassium = Math.Min(data.Potassium, 100f);
+            
+            // Clamp 100
+            data.Nitrogen = Math.Min(data.Nitrogen, 100f); 
+            data.Phosphorus = Math.Min(data.Phosphorus, 100f); 
+            data.Potassium = Math.Min(data.Potassium, 100f);
+            
             SaveSoilDataAt(location, tile, data);
             Game1.createRadialDebris(location, 12, (int)tile.X, (int)tile.Y, 6, false);
         }
     }
-
+    
+    // Clase auxiliar para la animación (igual que tenías, pero la incluyo para que compile)
     public class VerticalPestSprite : TemporaryAnimatedSprite
     {
         public VerticalPestSprite(Texture2D texture, Vector2 position) : base()
         {
             this.texture = texture;
             this.position = position;
-            
             this.sourceRect = new Rectangle(0, 0, 16, 16);
-            this.sourceRectStartingPos = new Vector2(0f, 0f); 
-            
             this.interval = 100f;          
             this.animationLength = 4;      
-            this.totalNumberOfLoops = 15;  
-            
+            this.totalNumberOfLoops = 10;  
             this.scale = 4f;
             this.layerDepth = 1f;
-            this.motion = Vector2.Zero;
-        }
-
-        public override bool update(GameTime time)
-        {
-            bool result = base.update(time);
-
-            // Forzamos la lectura vertical
-            this.sourceRect.X = 0; 
-            this.sourceRect.Y = this.currentParentTileIndex * 16;
-
-            return result;
         }
     }
 }
