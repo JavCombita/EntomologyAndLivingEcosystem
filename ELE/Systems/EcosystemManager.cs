@@ -29,7 +29,6 @@ namespace ELE.Core.Systems
             {
                 if (!location.IsFarm && !location.Name.Contains("Greenhouse")) continue;
                 
-                // Iterar sobre una copia para poder modificar colecciones si fuera necesario
                 var terrainFeatures = location.terrainFeatures.Pairs.ToList();
                 foreach (var pair in terrainFeatures)
                 {
@@ -40,20 +39,18 @@ namespace ELE.Core.Systems
             this.Monitor.Log("Daily soil analysis completed.", LogLevel.Trace);
         }
 
-        // Método de Debug
         public void ForcePestAttack()
         {
             Monitor.Log("Forcing Pest Attack on nearby crops...", LogLevel.Alert);
             GameLocation loc = Game1.currentLocation;
             Vector2 playerTile = Game1.player.Tile;
             
-            // Buscar cultivos cercanos al jugador
             int attempts = 0;
             foreach (var pair in loc.terrainFeatures.Pairs)
             {
                 if (pair.Value is HoeDirt dirt && dirt.crop != null && Vector2.Distance(pair.Key, playerTile) < 5)
                 {
-                    SpawnPest(loc, pair.Key, dirt, true); // True = Force
+                    SpawnPest(loc, pair.Key, dirt, true); 
                     attempts++;
                     if (attempts >= 3) break;
                 }
@@ -66,13 +63,11 @@ namespace ELE.Core.Systems
 
             SoilData data = GetSoilDataAt(location, tile);
             
-            // Lógica de Monocultivo: Verificar vecinos
             int similarNeighbors = CountSimilarNeighbors(location, tile, dirt.crop.indexOfHarvest.Value);
-            float monoculturePenalty = 1.0f + (similarNeighbors * 0.1f); // 10% extra drain per neighbor
+            float monoculturePenalty = 1.0f + (similarNeighbors * 0.1f);
 
             float consumption = 2.0f * this.Mod.Config.NutrientDepletionMultiplier * monoculturePenalty;
             
-            // Drenaje según fase
             if (dirt.crop.currentPhase.Value < dirt.crop.phaseDays.Count - 1)
             {
                 data.Nitrogen -= consumption * 1.5f;     
@@ -84,14 +79,12 @@ namespace ELE.Core.Systems
                 data.Potassium -= consumption * 1.2f;
             }
 
-            // Normalizar límites
             data.Nitrogen = Math.Max(0, data.Nitrogen);
             data.Phosphorus = Math.Max(0, data.Phosphorus);
             data.Potassium = Math.Max(0, data.Potassium);
 
             SaveSoilDataAt(location, tile, data);
 
-            // Trigger de Plagas: Si Potasio (K) < 50
             if (data.Potassium < 50)
             {
                 TrySpawnPests(location, tile, dirt);
@@ -116,15 +109,14 @@ namespace ELE.Core.Systems
         {
             if (!this.Mod.Config.EnablePestInvasions && !forced) return;
             
-            // Chequeo de Shelter
             if (IsProtectedByShelter(location, tile)) 
             {
-                // Efecto visual de "Bloqueo" (Cian explosion)
-                Game1.multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite(362, 30f, 1, 1, tile * 64f, false, false){ color = Color.Cyan, scale = 4f });
+                // Corrección: Usar Reflection para acceder a 'Game1.multiplayer'
+                var multiplayer = this.Mod.Helper.Reflection.GetField<Multiplayer>(typeof(Game1), "multiplayer").GetValue();
+                multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite(362, 30f, 1, 1, tile * 64f, false, false){ color = Color.Cyan, scale = 4f });
                 return;
             }
 
-            // Probabilidad de aparición (5%)
             if (forced || Game1.random.NextDouble() < 0.05)
             {
                 SpawnPest(location, tile, dirt, forced);
@@ -133,26 +125,24 @@ namespace ELE.Core.Systems
 
         private void SpawnPest(GameLocation location, Vector2 tile, HoeDirt dirt, bool forced)
         {
-            // Visual FX (Nube de insectos persistente como animación temporal)
             if (ModEntry.PestTexture != null)
             {
                  location.temporarySprites.Add(new VerticalPestSprite(ModEntry.PestTexture, tile * 64f));
             }
 
-            // MECÁNICA: Muerte súbita vs Drenaje
-            // 30% chance de muerte (o 100% si es forzado para probar)
             if (forced || Game1.random.NextDouble() < 0.30) 
             {
-                dirt.crop = null; // Muerte
+                dirt.crop = null; 
                 Game1.playSound("cut");
-                Game1.multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite(362, 30f, 1, 1, tile * 64f, false, false){ color = Color.DarkGreen }); // Hojas volando
                 
-                // Mensaje solo una vez por día para no spammear
+                // Corrección: Usar Reflection para acceder a 'Game1.multiplayer'
+                var multiplayer = this.Mod.Helper.Reflection.GetField<Multiplayer>(typeof(Game1), "multiplayer").GetValue();
+                multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite(362, 30f, 1, 1, tile * 64f, false, false){ color = Color.DarkGreen });
+                
                 if (!forced) Game1.addHUDMessage(new HUDMessage(this.Mod.Helper.Translation.Get("notification.pest_damage"), 3));
             }
             else
             {
-                // Drenaje masivo de nutrientes (La plaga come)
                 SoilData data = GetSoilDataAt(location, tile);
                 data.Nitrogen = Math.Max(0, data.Nitrogen - 20);
                 data.Phosphorus = Math.Max(0, data.Phosphorus - 20);
@@ -172,7 +162,6 @@ namespace ELE.Core.Systems
             return false;
         }
 
-        // --- Data Persistence ---
         public SoilData GetSoilDataAt(GameLocation location, Vector2 tile)
         {
             if (location.modData.TryGetValue($"{SoilDataKey}/{tile.X},{tile.Y}", out string dataStr))
@@ -191,14 +180,12 @@ namespace ELE.Core.Systems
         {
             SoilData data = GetSoilDataAt(location, tile);
             
-            // Soporte para IDs nuevos (Strings en 1.6)
             switch (fertilizerId)
             {
-                case "(O)368": case "368": // Basic
+                case "(O)368": case "368": 
                     data.Nitrogen += 30f; break;
-                case "(O)369": case "369": // Quality
+                case "(O)369": case "369": 
                     data.Nitrogen += 60f; data.Phosphorus += 30f; break;
-                // --- NUEVOS FERTILIZANTES DE ELE ---
                 case "JavCombita.ELE_Fertilizer_N": 
                     data.Nitrogen += 80f; break;
                 case "JavCombita.ELE_Fertilizer_P": 
@@ -211,7 +198,6 @@ namespace ELE.Core.Systems
                 default: data.Nitrogen += 15f; data.Phosphorus += 15f; data.Potassium += 15f; break;
             }
             
-            // Clamp 100
             data.Nitrogen = Math.Min(data.Nitrogen, 100f); 
             data.Phosphorus = Math.Min(data.Phosphorus, 100f); 
             data.Potassium = Math.Min(data.Potassium, 100f);
@@ -221,7 +207,6 @@ namespace ELE.Core.Systems
         }
     }
     
-    // Clase auxiliar para la animación (igual que tenías, pero la incluyo para que compile)
     public class VerticalPestSprite : TemporaryAnimatedSprite
     {
         public VerticalPestSprite(Texture2D texture, Vector2 position) : base()

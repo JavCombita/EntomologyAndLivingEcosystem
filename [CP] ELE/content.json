@@ -145,7 +145,7 @@
                 "Soil Analyzer": "335 5 334 2/Home/JavCombita.ELE_SoilAnalyzer/false/null",
                 
                 // Shelter: Wood (388) x70, Hardwood (709) x30
-                "Ladybug Shelter": "388 70 ujhhhhhhhhhhhh-709 30/Home/JavCombita.ELE_LadybugShelter/false/null",
+                "Ladybug Shelter": "388 70 709 30/Home/JavCombita.ELE_LadybugShelter/false/null",
                 
                 // Spreader: Iron Bar (335) x10, Copper Bar (334) x5, Iridium Bar (337) x1
                 "Nutrient Spreader": "335 10 334 5 337 1/Home/JavCombita.ELE_NutrientSpreader/false/null",

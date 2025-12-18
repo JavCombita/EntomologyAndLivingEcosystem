@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using StardewModdingAPI;
 using StardewValley;
 using StardewValley.Objects;
+using StardewValley.TerrainFeatures; // <--- Importante
 
 namespace ELE.Core.Systems
 {
@@ -20,7 +21,6 @@ namespace ELE.Core.Systems
 
         private void OnDayStarted(object sender, StardewModdingAPI.Events.DayStartedEventArgs e)
         {
-            // Procesar máquinas en todas las ubicaciones
             foreach(var location in Game1.locations)
             {
                 if (!location.IsFarm && !location.Name.Contains("Greenhouse")) continue;
@@ -37,13 +37,11 @@ namespace ELE.Core.Systems
 
         private void ProcessSpreader(GameLocation location, Vector2 tile, StardewValley.Object machine)
         {
-            // Buscar cofre adyacente (Arriba) que contenga fertilizante
             Vector2 chestTile = tile + new Vector2(0, -1);
             if (location.objects.TryGetValue(chestTile, out StardewValley.Object obj) && obj is Chest chest)
             {
                 var inventory = chest.GetItemsForPlayer(Game1.player.UniqueMultiplayerID);
                 
-                // Buscar fertilizante compatible
                 Item fertilizer = null;
                 foreach(var item in inventory)
                 {
@@ -56,16 +54,12 @@ namespace ELE.Core.Systems
 
                 if (fertilizer != null)
                 {
-                    // Consumir 1 unidad
                     fertilizer.Stack--;
                     if (fertilizer.Stack <= 0) chest.Items.Remove(fertilizer);
 
-                    // Aplicar efecto en área (Radio 3 -> 7x7)
                     ApplyFertilizerArea(location, tile, fertilizer.ItemId, 3);
                     
-                    // FX
                     Game1.playSound("sandPolisher");
-                    // Animación breve de la máquina
                     machine.showNextIndex.Value = true; 
                 }
             }
@@ -78,9 +72,8 @@ namespace ELE.Core.Systems
                 for (int y = -radius; y <= radius; y++)
                 {
                     Vector2 target = center + new Vector2(x, y);
-                    if (location.terrainFeatures.TryGetValue(target, out TerrainFeature tf) && tf is StardewValley.TerrainFeatures.HoeDirt)
+                    if (location.terrainFeatures.TryGetValue(target, out TerrainFeature tf) && tf is HoeDirt)
                     {
-                        // Restaurar nutrientes usando el sistema existente
                         Mod.Ecosystem.RestoreNutrients(location, target, fertilizerId);
                     }
                 }

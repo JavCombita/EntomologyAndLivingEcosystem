@@ -24,6 +24,7 @@ namespace ELE.Core
         public EcosystemManager Ecosystem { get; private set; }
         public MonsterMigration Migration { get; private set; }
         public RenderingSystem Renderer { get; private set; }
+        public MachineLogic Machines { get; private set; }
 
         public override void Entry(IModHelper helper)
         {
@@ -33,7 +34,7 @@ namespace ELE.Core
             LoadAssets();
             InitializeSystems();
             RegisterEvents();
-            RegisterConsoleCommands(); // <--- NUEVO
+            RegisterConsoleCommands();
 
             // Harmony
             var harmony = new Harmony(this.ModManifest.UniqueID);
@@ -45,7 +46,7 @@ namespace ELE.Core
             try 
             {
                 ShelterTexture = Helper.ModContent.Load<Texture2D>("assets/ladybug_shelter_anim.png");
-                // Carga segura de textura opcional
+                
                 if (Helper.ModContent.DoesAssetExist<Texture2D>("assets/pest_anim.png"))
                 {
                     PestTexture = Helper.ModContent.Load<Texture2D>("assets/pest_anim.png");
@@ -62,7 +63,8 @@ namespace ELE.Core
             this.Ecosystem = new EcosystemManager(this);
             this.Migration = new MonsterMigration(this);
             this.Renderer = new RenderingSystem(this);
-			new MachineLogic(this);
+            // Inicializamos la lógica de máquinas (Spreader)
+            this.Machines = new MachineLogic(this);
         }
 
         private void RegisterEvents()
@@ -97,7 +99,6 @@ namespace ELE.Core
 
         private void OnGameLaunched(object sender, GameLaunchedEventArgs e)
         {
-            // GMCM Integration (Código resumido para brevedad, mantener el original tuyo aquí)
             var configMenu = this.Helper.ModRegistry.GetApi<IGenericModConfigMenuApi>("spacechase0.GenericModConfigMenu");
             if (configMenu != null)
             {
@@ -109,7 +110,15 @@ namespace ELE.Core
                 configMenu.AddBoolOption(ModManifest, () => Config.EnableMonsterMigration, val => Config.EnableMonsterMigration = val, () => Helper.Translation.Get("config.enableMigration"));
                 
                 // Difficulty
-                configMenu.AddTextOption(ModManifest, () => Config.InvasionDifficulty, val => Config.InvasionDifficulty = val, () => Helper.Translation.Get("config.invasionDifficulty"), new[] { "Easy", "Medium", "Hard", "VeryHard" });
+                // CORRECCIÓN: Se pasa 'null' como tooltip (argumento 5) para que el array de strings sea el argumento 6
+                configMenu.AddTextOption(
+                    ModManifest, 
+                    () => Config.InvasionDifficulty, 
+                    val => Config.InvasionDifficulty = val, 
+                    () => Helper.Translation.Get("config.invasionDifficulty"), 
+                    null, 
+                    new[] { "Easy", "Medium", "Hard", "VeryHard" }
+                );
                 
                 // Nutrients
                 configMenu.AddSectionTitle(ModManifest, () => Helper.Translation.Get("config.section.nutrients"));
@@ -119,7 +128,7 @@ namespace ELE.Core
 
         private void OnDayStarted(object sender, DayStartedEventArgs e)
         {
-            if (Context.IsMainPlayer) // Solo el host calcula lógica global
+            if (Context.IsMainPlayer) 
             {
                 this.Ecosystem.CalculateDailyNutrients();
                 this.Migration.CheckMigrationStatus();
