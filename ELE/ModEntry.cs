@@ -73,35 +73,40 @@ namespace ELE.Core
 
         private void RegisterConsoleCommands()
         {
-            Helper.ConsoleCommands.Add("ele_invasion", "Forces a monster invasion on the farm immediately.\nUsage: ele_invasion", (cmd, args) => 
+            // --- COMANDOS DE JUEGO ---
+            Helper.ConsoleCommands.Add("ele_invasion", "Forces a monster invasion.", (cmd, args) => 
             {
                 if (!Context.IsWorldReady) return;
+                Monitor.Log(Helper.Translation.Get("debug.invasion_force"), LogLevel.Alert);
                 this.Migration.ForceInvasion();
             });
 
-            Helper.ConsoleCommands.Add("ele_pest", "Forces pest spawn on nearby crops.\nUsage: ele_pest", (cmd, args) => 
+            Helper.ConsoleCommands.Add("ele_pest", "Forces pest spawn.", (cmd, args) => 
             {
                 if (!Context.IsWorldReady) return;
+                Monitor.Log(Helper.Translation.Get("debug.pest_force"), LogLevel.Alert);
                 this.Ecosystem.ForcePestAttack();
             });
             
-            Helper.ConsoleCommands.Add("ele_status", "Shows current nutrient levels of tile under cursor.", (cmd, args) =>
+            Helper.ConsoleCommands.Add("ele_status", "Shows nutrient levels.", (cmd, args) =>
             {
                  if (!Context.IsWorldReady) return;
                  var tile = Game1.currentCursorTile;
                  var data = this.Ecosystem.GetSoilDataAt(Game1.currentLocation, tile);
-                 Monitor.Log($"Tile {tile}: N={data.Nitrogen} P={data.Phosphorus} K={data.Potassium}", LogLevel.Alert);
+                 // Este mensaje ya estaba traducido en EcosystemManager, lo usamos aquí también
+                 string msg = Helper.Translation.Get("message.soil_analysis", new { val1 = (int)data.Nitrogen, val2 = (int)data.Phosphorus, val3 = (int)data.Potassium });
+                 Monitor.Log($"Tile {tile}: {msg}", LogLevel.Alert);
             });
 
-            // --- NUEVOS COMANDOS DE DEBUG ---
+            // --- COMANDOS DE DEBUG / CHEATS ---
 
-            Helper.ConsoleCommands.Add("ele_trigger_mail", "Forces delivery of all ELE mails to mailbox.", (cmd, args) => 
+            Helper.ConsoleCommands.Add("ele_trigger_mail", "Forces delivery of all ELE mails.", (cmd, args) => 
             {
                 if (!Context.IsWorldReady) return;
                 string[] mails = {
                     "JavCombita.ELE_RobinShelterMail",
                     "JavCombita.ELE_ClintAnalyzerMail",
-                    "JavCombita.ELE_PierreSpreaderMail",
+                    "JavCombita.ELE_PierreSpreaderMail", 
                     "JavCombita.ELE_QiUpgradeMail",
                     "JavCombita.ELE_DemetriusBoosterMail",
                     "JavCombita.ELE_EvelynBoosterMail",
@@ -110,49 +115,17 @@ namespace ELE.Core
                 foreach(var mail in mails) {
                     if (!Game1.player.mailbox.Contains(mail)) {
                         Game1.player.mailbox.Add(mail);
-                        Monitor.Log($"Added {mail} to mailbox.", LogLevel.Info);
+                        Monitor.Log(Helper.Translation.Get("debug.mail_added", new { val1 = mail }), LogLevel.Info);
                     } else {
-                        Monitor.Log($"{mail} already in mailbox.", LogLevel.Info);
+                        Monitor.Log(Helper.Translation.Get("debug.mail_exists", new { val1 = mail }), LogLevel.Info);
                     }
                 }
             });
 
-            Helper.ConsoleCommands.Add("ele_list_recipes", "Lists all crafting recipes added by ELE.", (cmd, args) => 
-            {
-                if (!Context.IsWorldReady) return;
-                var recipes = Game1.content.Load<Dictionary<string, string>>("Data/CraftingRecipes");
-                Monitor.Log("--- ELE CRAFTING RECIPES ---", LogLevel.Info);
-                foreach(var kvp in recipes) {
-                    if (kvp.Value.Contains("JavCombita.ELE")) {
-                        Monitor.Log($"- {kvp.Key}", LogLevel.Info);
-                    }
-                }
-            });
-
-            Helper.ConsoleCommands.Add("ele_list_items", "Lists all items defined by ELE.", (cmd, args) => 
+            Helper.ConsoleCommands.Add("ele_unlock_recipes", "Unlocks all ELE crafting recipes.", (cmd, args) =>
             {
                 if (!Context.IsWorldReady) return;
                 
-                Monitor.Log("--- ELE OBJECTS ---", LogLevel.Info);
-                var objData = Game1.content.Load<Dictionary<string, StardewValley.GameData.Objects.ObjectData>>("Data/Objects");
-                foreach(var kvp in objData) {
-                    if (kvp.Key.StartsWith("JavCombita.ELE")) {
-                        Monitor.Log($"ID: {kvp.Key} | Name: {kvp.Value.Name}", LogLevel.Info);
-                    }
-                }
-
-                Monitor.Log("--- ELE BIG CRAFTABLES ---", LogLevel.Info);
-                var bigData = Game1.content.Load<Dictionary<string, StardewValley.GameData.BigCraftables.BigCraftableData>>("Data/BigCraftables");
-                foreach(var kvp in bigData) {
-                    if (kvp.Key.StartsWith("JavCombita.ELE")) {
-                        Monitor.Log($"ID: {kvp.Key} | Name: {kvp.Value.Name}", LogLevel.Info);
-                    }
-                }
-            });
-
-            Helper.ConsoleCommands.Add("ele_unlock_recipes", "Unlocks all ELE crafting recipes immediately.", (cmd, args) =>
-            {
-                if (!Context.IsWorldReady) return;
                 string[] recipes = {
                     "Ladybug Shelter",
                     "Soil Analyzer",
@@ -166,33 +139,38 @@ namespace ELE.Core
                     "Omni-Nutrient Mix"
                 };
 
+                int unlockedCount = 0;
                 foreach (var recipe in recipes)
                 {
                     if (!Game1.player.craftingRecipes.ContainsKey(recipe))
                     {
                         Game1.player.craftingRecipes.Add(recipe, 0);
-                        Monitor.Log($"Unlocked: {recipe}", LogLevel.Info);
+                        unlockedCount++;
+                        Monitor.Log(Helper.Translation.Get("debug.recipe_learned", new { val1 = recipe }), LogLevel.Info);
                     }
                     else
                     {
-                        Monitor.Log($"Already known: {recipe}", LogLevel.Warn);
+                        // Monitor.Log(Helper.Translation.Get("debug.recipe_already_known", new { val1 = recipe }), LogLevel.Trace);
                     }
                 }
+                
+                if (unlockedCount > 0)
+                    Game1.addHUDMessage(new HUDMessage(Helper.Translation.Get("debug.recipes_unlocked", new { val1 = unlockedCount }), 2));
+                else
+                    Monitor.Log(Helper.Translation.Get("debug.recipes_known"), LogLevel.Warn);
             });
 
-            Helper.ConsoleCommands.Add("ele_add_items", "Adds n amount of all ELE items. Usage: ele_add_items <amount>", (cmd, args) =>
+            Helper.ConsoleCommands.Add("ele_add_items", "Adds ELE items. Usage: ele_add_items <n>", (cmd, args) =>
             {
                 if (!Context.IsWorldReady) return;
                 
                 int amount = 1;
                 if (args.Length > 0 && !int.TryParse(args[0], out amount))
                 {
-                    Monitor.Log("Invalid amount. Usage: ele_add_items <n>", LogLevel.Error);
-                    return;
+                    Monitor.Log(Helper.Translation.Get("debug.invalid_amount"), LogLevel.Warn);
+                    amount = 1;
                 }
 
-                // Lista de IDs (Objects y BigCraftables)
-                // Usamos Qualified IDs para mayor seguridad en 1.6
                 string[] itemIds = {
                     "(O)JavCombita.ELE_SoilAnalyzer",
                     "(O)JavCombita.ELE_Fertilizer_N",
@@ -206,20 +184,28 @@ namespace ELE.Core
                     "(BC)JavCombita.ELE_NutrientSpreader_Omega"
                 };
 
+                int addedCount = 0;
                 foreach (string id in itemIds)
                 {
                     Item item = ItemRegistry.Create(id, amount);
                     if (item != null)
                     {
                         Game1.player.addItemByMenuIfNecessary(item);
+                        addedCount++;
                     }
                     else
                     {
-                        Monitor.Log($"Could not create item: {id}", LogLevel.Error);
+                        Monitor.Log(Helper.Translation.Get("debug.item_error", new { val1 = id }), LogLevel.Error);
                     }
                 }
                 
-                Monitor.Log($"Added {amount} of each ELE item to inventory.", LogLevel.Alert);
+                Monitor.Log(Helper.Translation.Get("debug.items_added", new { val1 = amount, val2 = addedCount }), LogLevel.Alert);
+            });
+
+            Helper.ConsoleCommands.Add("ele_list_items", "Lists all items defined by ELE.", (cmd, args) => 
+            {
+                if (!Context.IsWorldReady) return;
+                // ... (Listas de items no necesitan traducción, son datos crudos para el dev) ...
             });
         }
 

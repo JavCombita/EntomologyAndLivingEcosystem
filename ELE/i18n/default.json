@@ -21,5 +21,17 @@
   "notification.farm_invasion": "⚠️ The monsters are attacking your farm! Defend the house!",
   "notification.invasion_cleared": "The farm is safe... for now.",
   
-  "message.soil_analysis": "Soil: N:{{val1}}% P:{{val2}}% K:{{val3}}%"
+  "message.soil_analysis": "Soil: N:{{val1}}% P:{{val2}}% K:{{val3}}%",
+
+  "debug.invasion_force": "Forcing Monster Invasion...",
+  "debug.pest_force": "Forcing Pest Attack...",
+  "debug.mail_added": "Added mail: {{val1}}",
+  "debug.mail_exists": "Mail already in mailbox: {{val1}}",
+  "debug.recipes_unlocked": "Unlocked {{val1}} ELE recipes!",
+  "debug.recipes_known": "All ELE recipes were already known.",
+  "debug.recipe_learned": "Unlocked: {{val1}}",
+  "debug.recipe_already_known": "Already known: {{val1}}",
+  "debug.items_added": "Attempted to add {{val1}} of {{val2}} items to inventory.",
+  "debug.item_error": "Could not create item: {{val1}}",
+  "debug.invalid_amount": "Invalid amount. Usage: ele_add_items <n>. Defaulting to 1."
 }
