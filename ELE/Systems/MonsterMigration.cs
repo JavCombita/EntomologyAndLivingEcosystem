@@ -114,13 +114,47 @@ namespace ELE.Core.Systems
             if (!location.isTilePassable(new xTile.Dimensions.Location((int)tile.X, (int)tile.Y), Game1.viewport))
                 return false;
 
-            // 2. Verificar si hay edificios, cultivos o personajes
-            if (location.isTileOccupied(tile))
-                return false;
+            // 2. Objetos (Piedras, Madera, Cofres)
+            if (location.objects.ContainsKey(tile)) return false;
 
-            // 3. Verificar agua
+            // 3. TerrainFeatures (Cultivos, Arboles, Pisos)
+            if (location.terrainFeatures.ContainsKey(tile)) return false;
+
+            // 4. Large Terrain Features (Arbustos, Meteoritos)
+            Rectangle tileRect = new Rectangle((int)tile.X * 64, (int)tile.Y * 64, 64, 64);
+            if (location.largeTerrainFeatures != null)
+            {
+                foreach (var feature in location.largeTerrainFeatures)
+                {
+                    if (feature.getBoundingBox().Intersects(tileRect)) return false;
+                }
+            }
+
+            // 5. Personajes (Jugador, NPCs, otros monstruos)
+            if (Game1.player.Tile == tile) return false;
+            foreach (var npc in location.characters)
+            {
+                if (npc.Tile == tile) return false;
+            }
+
+            // 6. Verificar agua
             if (location.isWaterTile((int)tile.X, (int)tile.Y))
                 return false;
+            
+            // 7. Edificios (Solo si es Farm) - Chequeo manual de coordenadas
+            if (location is Farm farm)
+            {
+                foreach(var building in farm.buildings)
+                {
+                    int bx = building.tileX.Value;
+                    int by = building.tileY.Value;
+                    int bw = building.tilesWide.Value;
+                    int bh = building.tilesHigh.Value;
+
+                    if (tile.X >= bx && tile.X < bx + bw && tile.Y >= by && tile.Y < by + bh)
+                        return false;
+                }
+            }
 
             return true;
         }
