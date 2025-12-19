@@ -28,6 +28,7 @@
   "machine.busy": "System Busy. Operation in progress.",
   "machine.invalid_input": "Invalid Input. Please hold a Nutrient Booster.",
   "machine.missing_resources": "Insufficient Materials.\nRequires:\n- {{bCount}} x {{bName}}\n- {{mCount}} x Milk OR {{lmCount}} x Large Milk.",
+  "machine.missing_resources_omni": "Insufficient Materials.\nRequires:\n- {{bCount}} x {{bName}}\n- {{lmCount}} x Large Milk (Premium fuel required).",
 
   "debug.invasion_force": "Forcing Monster Invasion...",
   "debug.pest_force": "Forcing Pest Attack...",

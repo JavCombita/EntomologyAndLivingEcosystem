@@ -198,13 +198,24 @@
             "Action": "EditData",
             "Target": "Data/mail",
             "Entries": {
+                // Robin
                 "JavCombita.ELE_RobinShelterMail": "{{i18n:mail.robin_shelter.body}}[#]{{i18n:mail.robin_shelter.title}}",
+                
+                // Clint
                 "JavCombita.ELE_ClintAnalyzerMail": "{{i18n:mail.clint_analyzer.body}}[#]{{i18n:mail.clint_analyzer.title}}",
-                "JavCombita.ELE_PierreSpreaderMail": "{{i18n:mail.pierre_spreader.body}}[#]{{i18n:mail.pierre_spreader.title}}%item craftingRecipe Nutrient Spreader %%",
-                "JavCombita.ELE_QiUpgradeMail": "{{i18n:mail.qi_upgrades.body}}[#]{{i18n:mail.qi_upgrades.title}}%item craftingRecipe Nutrient Spreader Mk2 %%item craftingRecipe Nutrient Spreader Mk3 %%item craftingRecipe Nutrient Spreader Omega %%",
-                "JavCombita.ELE_DemetriusBoosterMail": "{{i18n:mail.demetrius_n.body}}[#]{{i18n:mail.demetrius_n.title}}%item craftingRecipe Nitrogen Booster %%",
-                "JavCombita.ELE_EvelynBoosterMail": "{{i18n:mail.evelyn_p.body}}[#]{{i18n:mail.evelyn_p.title}}%item craftingRecipe Phosphorus Booster %%",
-                "JavCombita.ELE_JodiBoosterMail": "{{i18n:mail.jodi_k.body}}[#]{{i18n:mail.jodi_k.title}}%item craftingRecipe Potassium Booster %%"
+                
+                // Pierre (Spreaders)
+                "JavCombita.ELE_PierreSpreaderMail": "{{i18n:mail.pierre_spreader.body}}%item craftingRecipe Nutrient Spreader %%[#]{{i18n:mail.pierre_spreader.title}}",
+                
+                // Qi (Upgrades)
+                "JavCombita.ELE_QiUpgradeMail": "{{i18n:mail.qi_upgrades.body}}%item craftingRecipe Nutrient Spreader Mk2 %%item craftingRecipe Nutrient Spreader Mk3 %%item craftingRecipe Nutrient Spreader Omega %%[#]{{i18n:mail.qi_upgrades.title}}",
+                
+                // Boosters (Aquí estaba el fallo principal)
+                "JavCombita.ELE_DemetriusBoosterMail": "{{i18n:mail.demetrius_n.body}}%item craftingRecipe Nitrogen Booster %%[#]{{i18n:mail.demetrius_n.title}}",
+                
+                "JavCombita.ELE_EvelynBoosterMail": "{{i18n:mail.evelyn_p.body}}%item craftingRecipe Phosphorus Booster %%[#]{{i18n:mail.evelyn_p.title}}",
+                
+                "JavCombita.ELE_JodiBoosterMail": "{{i18n:mail.jodi_k.body}}%item craftingRecipe Potassium Booster %%[#]{{i18n:mail.jodi_k.title}}"
             }
         },
 
