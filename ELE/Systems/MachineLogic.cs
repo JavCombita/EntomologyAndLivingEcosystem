@@ -179,7 +179,7 @@ namespace ELE.Core.Systems
 
         private void CalculateCosts(string machineId, string boosterId, out int bCost, out int mCost, out int lmCost)
         {
-            if (boosterId.Contains(BoostOmni)) { bCost=1; mCost=999; lmCost=1; return; }
+            if (boosterId.Contains(BoostOmni)) { bCost=7; mCost=999; lmCost=2; return; }
 
             // Detección por sub-string para ignorar prefijos de máquina
             if (machineId.Contains(SpreaderOmega)) { bCost=14; mCost=14; lmCost=2; return; }

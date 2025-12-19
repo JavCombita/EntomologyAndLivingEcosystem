@@ -172,21 +172,21 @@
                 "Nutrient_Spreader": "336 5 335 20 768 25 388 100 709 50/Home/JavCombita.ELE_NutrientSpreader/false/null",
 
                 // Mk2: Prismatic Shard (896)
-                "Nutrient_Spreader_Mk2": "JavCombita.ELE_NutrientSpreader 1 337 5 896 1/Home/JavCombita.ELE_NutrientSpreader_Mk2/false/null",
+                "Nutrient_Spreader_Mk2": "JavCombita.ELE_NutrientSpreader 1 337 5 72 1/Home/JavCombita.ELE_NutrientSpreader_Mk2/false/null",
 
                 // Mk3
-                "Nutrient_Spreader_Mk3": "JavCombita.ELE_NutrientSpreader_Mk2 1 896 1 848 20/Home/JavCombita.ELE_NutrientSpreader_Mk3/false/null",
+                "Nutrient_Spreader_Mk3": "JavCombita.ELE_NutrientSpreader_Mk2 1 74 1 848 20/Home/JavCombita.ELE_NutrientSpreader_Mk3/false/null",
 
                 // Omega
                 "Nutrient_Spreader_Omega": "JavCombita.ELE_NutrientSpreader_Mk3 1 896 1 910 5/Home/JavCombita.ELE_NutrientSpreader_Omega/false/null",
 
                 // Boosters
-                "Nitrogen_Booster": "92 20/Field/JavCombita.ELE_Fertilizer_N/false/null",
-                "Phosphorus_Booster": "330 2/Field/JavCombita.ELE_Fertilizer_P/false/null",
-                "Potassium_Booster": "152 20/Field/JavCombita.ELE_Fertilizer_K/false/null",
+                "Nitrogen_Booster": "390 15 382 5 330 5 92 10/Field/JavCombita.ELE_Fertilizer_N/false/null",
+                "Phosphorus_Booster": "390 15 382 5 330 5 378 10/Field/JavCombita.ELE_Fertilizer_P/false/null",
+                "Potassium_Booster": "390 15 382 5 330 5 388 10/Field/JavCombita.ELE_Fertilizer_K/false/null",
                 
                 // Omni Mix: 3 of each
-                "Omni_Nutrient_Mix": "JavCombita.ELE_Fertilizer_N 3 JavCombita.ELE_Fertilizer_P 3 JavCombita.ELE_Fertilizer_K 3/Field/JavCombita.ELE_Fertilizer_Omni/false/Farming 7"
+                "Omni_Nutrient_Mix": "74 1 JavCombita.ELE_Fertilizer_N 14 JavCombita.ELE_Fertilizer_P 14 JavCombita.ELE_Fertilizer_K 14/Field/JavCombita.ELE_Fertilizer_Omni/false/Farming 7"
             }
         },
 
