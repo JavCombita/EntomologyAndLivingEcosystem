@@ -146,16 +146,19 @@ namespace ELE.Core.Systems
 
         private bool IsValidSpawnPosition(GameLocation location, Vector2 tile)
         {
+            // Verificaciones estándar de terreno
             if (!location.isTilePassable(new xTile.Dimensions.Location((int)tile.X, (int)tile.Y), Game1.viewport)) return false;
             if (location.isWaterTile((int)tile.X, (int)tile.Y)) return false;
             if (location.objects.ContainsKey(tile)) return false;
             if (location.terrainFeatures.ContainsKey(tile)) return false;
             
+            // Verificación específica de edificios en la granja
             if (location is Farm farm)
             {
                 foreach(var building in farm.buildings)
                 {
-                    if (building.containsPoint((int)tile.X, (int)tile.Y)) return false;
+                    // [FIX] Usamos occupiesTile(Vector2) en lugar de containsPoint(int, int)
+                    if (building.occupiesTile(tile)) return false;
                 }
             }
             return true;
