@@ -24,6 +24,7 @@ namespace ELE.Core.Systems
         private const string BoostP = "JavCombita.ELE_Fertilizer_P";
         private const string BoostK = "JavCombita.ELE_Fertilizer_K";
         private const string BoostOmni = "JavCombita.ELE_Fertilizer_Omni";
+        // Usamos Qualified IDs para mayor seguridad en 1.6
         private const string Milk = "(O)184";
         private const string LargeMilk = "(O)186";
 
@@ -52,7 +53,7 @@ namespace ELE.Core.Systems
 
                 // 2. Check Item en mano
                 Item held = Game1.player.CurrentItem;
-                if (held == null) return; 
+                if (held == null) return; // Mano vacía, no hace nada (permite inspeccionar)
 
                 if (!IsBooster(held.ItemId)) {
                     Game1.drawObjectDialogue(Mod.Helper.Translation.Get("machine.invalid_input"));
@@ -78,6 +79,7 @@ namespace ELE.Core.Systems
             }
 
             // Verificar Leche (Prioriza Large)
+            // Nota: En Stardew 1.6 ItemId es string, comparison segura.
             Item milkItem = Game1.player.Items.FirstOrDefault(i => i?.ItemId == LargeMilk && i.Stack >= lmCost);
             bool useLarge = (milkItem != null);
 
@@ -90,7 +92,13 @@ namespace ELE.Core.Systems
             }
 
             // CONSUMIR
-            Game1.player.reduceActiveItemByAmount(bCost);
+            // CORRECCIÓN: Lógica manual de reducción de item en mano
+            heldBooster.Stack -= bCost;
+            if (heldBooster.Stack <= 0)
+            {
+                Game1.player.Items[Game1.player.CurrentToolIndex] = null;
+            }
+
             if (useLarge) ConsumeInventoryItem(LargeMilk, lmCost);
             else ConsumeInventoryItem(Milk, mCost);
 

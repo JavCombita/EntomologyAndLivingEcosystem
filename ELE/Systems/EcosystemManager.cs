@@ -49,7 +49,13 @@ namespace ELE.Core.Systems
                 {
                     // Intentar aplicar
                     if (TryApplyBoosterManual(loc, tile, held.ItemId)) {
-                        Game1.player.reduceActiveItemByAmount(1);
+                        // CORRECCIÓN: Lógica manual de reducción de item
+                        held.Stack--;
+                        if (held.Stack <= 0)
+                        {
+                            Game1.player.Items[Game1.player.CurrentToolIndex] = null;
+                        }
+
                         Game1.playSound("dirtyHit");
                         Mod.Helper.Input.Suppress(e.Button);
                     }
