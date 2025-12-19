@@ -185,8 +185,8 @@
                 "Phosphorus_Booster": "390 15 382 5 330 5 378 10/Field/JavCombita.ELE_Fertilizer_P/false/null",
                 "Potassium_Booster": "390 15 382 5 330 5 388 10/Field/JavCombita.ELE_Fertilizer_K/false/null",
                 
-                // Omni Mix: 3 of each
-                "Omni_Nutrient_Mix": "74 1 JavCombita.ELE_Fertilizer_N 14 JavCombita.ELE_Fertilizer_P 14 JavCombita.ELE_Fertilizer_K 14/Field/JavCombita.ELE_Fertilizer_Omni/false/Farming 7"
+                // Omni Mix:
+                "Omni_Nutrient_Mix": "74 1 JavCombita.ELE_Fertilizer_N 15 JavCombita.ELE_Fertilizer_P 15 JavCombita.ELE_Fertilizer_K 15/Field/JavCombita.ELE_Fertilizer_Omni/false/Farming 7"
             }
         },
 
