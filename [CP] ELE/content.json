@@ -27,164 +27,244 @@
 
         // ============================================================
         // 2. DEFINICIÓN DE ITEMS (Data/Objects)
+        // PRECIOS ACTUALIZADOS SEGÚN MATERIALES
         // ============================================================
         {
             "Action": "EditData",
             "Target": "Data/Objects",
             "Entries": {
-                "JavCombita.ELE_SoilAnalyzer": {
-                    "Name": "Soil Analyzer",
-                    "DisplayName": "{{i18n:item.analyzer.name}}",
-                    "Description": "{{i18n:item.analyzer.description}}",
-                    "Type": "Basic",
-                    "Category": -99,
-                    "Price": 500,
+                // Analyzer: 4 Iron(480) + 10 Copper(600) + 5 Coal(75) = 1155g
+                "JavCombita.ELE_SoilAnalyzer": { 
+                    "Name": "Soil Analyzer", 
+                    "DisplayName": "{{i18n:item.analyzer.name}}", 
+                    "Description": "{{i18n:item.analyzer.description}}", 
+                    "Type": "Basic", 
+                    "Category": -99, 
+                    "Price": 1155, 
                     "Texture": "Mods/JavCombita/ELE/Analyzer", 
-                    "SpriteIndex": 0
+                    "SpriteIndex": 0 
                 },
-                "JavCombita.ELE_Fertilizer_N": {
-                    "Name": "Nitrogen Booster",
-                    "DisplayName": "{{i18n:item.fert_n.name}}",
-                    "Description": "{{i18n:item.fert_n.desc}}",
-                    "Type": "Basic",
-                    "Category": -19,
-                    "Price": 100,
-                    "Texture": "Mods/JavCombita/ELE/Fertilizers",
-                    "SpriteIndex": 0,
-                    "ContextTags": ["item_fertilizer"]
+                // N: 20 Sap(2) = 40g
+                "JavCombita.ELE_Fertilizer_N": { 
+                    "Name": "Nitrogen Booster", 
+                    "DisplayName": "{{i18n:item.fert_n.name}}", 
+                    "Description": "{{i18n:item.fert_n.desc}}", 
+                    "Type": "Basic", 
+                    "Category": -99, 
+                    "Price": 40, 
+                    "Texture": "Mods/JavCombita/ELE/Fertilizers", 
+                    "SpriteIndex": 0, 
+                    "ContextTags": ["item_booster_n"] 
                 },
-                "JavCombita.ELE_Fertilizer_P": {
-                    "Name": "Phosphorus Booster",
-                    "DisplayName": "{{i18n:item.fert_p.name}}",
-                    "Description": "{{i18n:item.fert_p.desc}}",
-                    "Type": "Basic",
-                    "Category": -19,
-                    "Price": 100,
-                    "Texture": "Mods/JavCombita/ELE/Fertilizers",
-                    "SpriteIndex": 1,
-                    "ContextTags": ["item_fertilizer"]
+                // P: 2 Clay(20) = 40g
+                "JavCombita.ELE_Fertilizer_P": { 
+                    "Name": "Phosphorus Booster", 
+                    "DisplayName": "{{i18n:item.fert_p.name}}", 
+                    "Description": "{{i18n:item.fert_p.desc}}", 
+                    "Type": "Basic", 
+                    "Category": -99, 
+                    "Price": 40, 
+                    "Texture": "Mods/JavCombita/ELE/Fertilizers", 
+                    "SpriteIndex": 1, 
+                    "ContextTags": ["item_booster_p"] 
                 },
-                "JavCombita.ELE_Fertilizer_K": {
-                    "Name": "Potassium Booster",
-                    "DisplayName": "{{i18n:item.fert_k.name}}",
-                    "Description": "{{i18n:item.fert_k.desc}}",
-                    "Type": "Basic",
-                    "Category": -19,
-                    "Price": 100,
-                    "Texture": "Mods/JavCombita/ELE/Fertilizers",
-                    "SpriteIndex": 2,
-                    "ContextTags": ["item_fertilizer"]
+                // K: 20 Fiber(1) = 20g
+                "JavCombita.ELE_Fertilizer_K": { 
+                    "Name": "Potassium Booster", 
+                    "DisplayName": "{{i18n:item.fert_k.name}}", 
+                    "Description": "{{i18n:item.fert_k.desc}}", 
+                    "Type": "Basic", 
+                    "Category": -99, 
+                    "Price": 20, 
+                    "Texture": "Mods/JavCombita/ELE/Fertilizers", 
+                    "SpriteIndex": 2, 
+                    "ContextTags": ["item_booster_k"] 
                 },
-                "JavCombita.ELE_Fertilizer_Omni": {
-                    "Name": "Omni-Nutrient Mix",
-                    "DisplayName": "{{i18n:item.fert_omni.name}}",
-                    "Description": "{{i18n:item.fert_omni.desc}}",
-                    "Type": "Basic",
-                    "Category": -19,
-                    "Price": 500,
-                    "Texture": "Mods/JavCombita/ELE/Fertilizers",
-                    "SpriteIndex": 3,
-                    "ContextTags": ["item_fertilizer"]
-                }
+                // Omni: 3N(120) + 3P(120) + 3K(60) = 300g
+                "JavCombita.ELE_Fertilizer_Omni": { 
+                    "Name": "Omni-Nutrient Mix", 
+                    "DisplayName": "{{i18n:item.fert_omni.name}}", 
+                    "Description": "{{i18n:item.fert_omni.desc}}", 
+                    "Type": "Basic", 
+                    "Category": -99, 
+                    "Price": 300, 
+                    "Texture": "Mods/JavCombita/ELE/Fertilizers", 
+                    "SpriteIndex": 3, 
+                    "ContextTags": ["item_booster_omni"] 
+                },
+
+                // ITEMS TÉCNICOS (Basura, valor 0)
+                "JavCombita.ELE_Processed_N": { "Name": "Processed Nitrogen", "DisplayName": "Processing...", "Type": "Trash", "Category": -99, "Price": 0, "Texture": "Mods/JavCombita/ELE/Fertilizers", "SpriteIndex": 0, "ContextTags": ["ele_processed"] },
+                "JavCombita.ELE_Processed_P": { "Name": "Processed Phosphorus", "DisplayName": "Processing...", "Type": "Trash", "Category": -99, "Price": 0, "Texture": "Mods/JavCombita/ELE/Fertilizers", "SpriteIndex": 1, "ContextTags": ["ele_processed"] },
+                "JavCombita.ELE_Processed_K": { "Name": "Processed Potassium", "DisplayName": "Processing...", "Type": "Trash", "Category": -99, "Price": 0, "Texture": "Mods/JavCombita/ELE/Fertilizers", "SpriteIndex": 2, "ContextTags": ["ele_processed"] },
+                "JavCombita.ELE_Processed_Omni": { "Name": "Processed Omni", "DisplayName": "Processing...", "Type": "Trash", "Category": -99, "Price": 0, "Texture": "Mods/JavCombita/ELE/Fertilizers", "SpriteIndex": 3, "ContextTags": ["ele_processed"] }
             }
         },
 
         // ============================================================
         // 3. DEFINICIÓN DE MÁQUINAS (Data/BigCraftables)
+        // PRECIOS A 0 PARA EVITAR VENTA
         // ============================================================
         {
             "Action": "EditData",
             "Target": "Data/BigCraftables",
             "Entries": {
-                "JavCombita.ELE_LadybugShelter": {
-                    "Name": "Ladybug Shelter",
-                    "DisplayName": "{{i18n:item.shelter.name}}",
-                    "Description": "{{i18n:item.shelter.description}}",
-                    "Price": 2000,
-                    "Texture": "Mods/JavCombita/ELE/Shelter",
-                    "SpriteIndex": 0,
-                    "ContextTags": ["not_giftable", "wood_item"]
-                },
-                // BASE: Radio 5x5
-                "JavCombita.ELE_NutrientSpreader": {
-                    "Name": "Nutrient Spreader",
-                    "DisplayName": "{{i18n:item.spreader.name}}",
-                    "Description": "{{i18n:item.spreader.desc}}",
-                    "Price": 4000,
-                    "Texture": "Mods/JavCombita/ELE/Spreader",
-                    "SpriteIndex": 0,
-                    "ContextTags": ["not_giftable", "machine"]
-                },
-                // MK2: Radio 7x7
-                "JavCombita.ELE_NutrientSpreader_Mk2": {
-                    "Name": "Nutrient Spreader Mk2",
-                    "DisplayName": "{{i18n:item.spreader_mk2.name}}",
-                    "Description": "{{i18n:item.spreader_mk2.desc}}",
-                    "Price": 6000,
-                    "Texture": "Mods/JavCombita/ELE/Spreader",
+                "JavCombita.ELE_LadybugShelter": { 
+                    "Name": "Ladybug Shelter", 
+                    "DisplayName": "{{i18n:item.shelter.name}}", 
+                    "Description": "{{i18n:item.shelter.description}}", 
+                    "Price": 0, 
+                    "Texture": "Mods/JavCombita/ELE/Shelter", 
                     "SpriteIndex": 0, 
-                    "ContextTags": ["not_giftable", "machine"]
+                    "ContextTags": ["not_giftable", "wood_item", "not_sellable"] 
                 },
-                // MK3: Radio 9x9
-                "JavCombita.ELE_NutrientSpreader_Mk3": {
-                    "Name": "Nutrient Spreader Mk3",
-                    "DisplayName": "{{i18n:item.spreader_mk3.name}}",
-                    "Description": "{{i18n:item.spreader_mk3.desc}}",
-                    "Price": 10000,
-                    "Texture": "Mods/JavCombita/ELE/Spreader",
+                "JavCombita.ELE_NutrientSpreader": { 
+                    "Name": "Nutrient Spreader", 
+                    "DisplayName": "{{i18n:item.spreader.name}}", 
+                    "Description": "{{i18n:item.spreader.desc}}", 
+                    "Price": 0, 
+                    "Texture": "Mods/JavCombita/ELE/Spreader", 
                     "SpriteIndex": 0, 
-                    "ContextTags": ["not_giftable", "machine"]
+                    "ContextTags": ["not_giftable", "machine", "not_sellable"] 
                 },
-                // OMEGA: Radio 15x15
-                "JavCombita.ELE_NutrientSpreader_Omega": {
-                    "Name": "Nutrient Spreader Omega",
-                    "DisplayName": "{{i18n:item.spreader_omega.name}}",
-                    "Description": "{{i18n:item.spreader_omega.desc}}",
-                    "Price": 20000,
-                    "Texture": "Mods/JavCombita/ELE/Spreader",
-                    "SpriteIndex": 0, 
-                    "ContextTags": ["not_giftable", "machine"]
+                "JavCombita.ELE_NutrientSpreader_Mk2": { 
+                    "Name": "Nutrient Spreader Mk2", 
+                    "DisplayName": "{{i18n:item.spreader_mk2.name}}", 
+                    "Description": "{{i18n:item.spreader_mk2.desc}}", 
+                    "Price": 0, 
+                    "Texture": "Mods/JavCombita/ELE/Spreader", 
+                    "SpriteIndex": 2, 
+                    "ContextTags": ["not_giftable", "machine", "not_sellable"] 
+                },
+                "JavCombita.ELE_NutrientSpreader_Mk3": { 
+                    "Name": "Nutrient Spreader Mk3", 
+                    "DisplayName": "{{i18n:item.spreader_mk3.name}}", 
+                    "Description": "{{i18n:item.spreader_mk3.desc}}", 
+                    "Price": 0, 
+                    "Texture": "Mods/JavCombita/ELE/Spreader", 
+                    "SpriteIndex": 4, 
+                    "ContextTags": ["not_giftable", "machine", "not_sellable"] 
+                },
+                "JavCombita.ELE_NutrientSpreader_Omega": { 
+                    "Name": "Nutrient Spreader Omega", 
+                    "DisplayName": "{{i18n:item.spreader_omega.name}}", 
+                    "Description": "{{i18n:item.spreader_omega.desc}}", 
+                    "Price": 0, 
+                    "Texture": "Mods/JavCombita/ELE/Spreader", 
+                    "SpriteIndex": 6, 
+                    "ContextTags": ["not_giftable", "machine", "not_sellable"] 
                 }
             }
         },
 
         // ============================================================
-        // 4. RECETAS DE CRAFTEO
+        // 4. LÓGICA DE MÁQUINAS (Data/Machines)
+        // ============================================================
+        {
+            "Action": "EditData",
+            "Target": "Data/Machines",
+            "Entries": {
+                // --- BASE SPREADER ---
+                "(BC)JavCombita.ELE_NutrientSpreader": {
+                    "WobbleWhileWorking": true,
+                    "LightWhileWorking": true,
+                    "ShowNextIndexWhileWorking": true,
+                    "OutputRules": [
+                        // Universal Omni
+                        { "Id": "Omni_LMilk", "Triggers": [{ "Id": "ItemPlacedInMachine", "ItemIds": ["(O)JavCombita.ELE_Fertilizer_Omni"], "Count": 1 }], "OutputItem": [{ "ItemId": "(O)JavCombita.ELE_Processed_Omni" }], "MinutesUntilReady": 30, "AdditionalConsumedItems": [{"ItemId": "(O)186", "Count": 1}] },
+                        
+                        // Large Milk (Cost 1)
+                        { "Id": "N_LMilk", "Triggers": [{ "Id": "ItemPlacedInMachine", "ItemIds": ["(O)JavCombita.ELE_Fertilizer_N"], "Count": 5 }], "OutputItem": [{ "ItemId": "(O)JavCombita.ELE_Processed_N" }], "MinutesUntilReady": 30, "AdditionalConsumedItems": [{"ItemId": "(O)186", "Count": 1}] },
+                        { "Id": "P_LMilk", "Triggers": [{ "Id": "ItemPlacedInMachine", "ItemIds": ["(O)JavCombita.ELE_Fertilizer_P"], "Count": 5 }], "OutputItem": [{ "ItemId": "(O)JavCombita.ELE_Processed_P" }], "MinutesUntilReady": 30, "AdditionalConsumedItems": [{"ItemId": "(O)186", "Count": 1}] },
+                        { "Id": "K_LMilk", "Triggers": [{ "Id": "ItemPlacedInMachine", "ItemIds": ["(O)JavCombita.ELE_Fertilizer_K"], "Count": 5 }], "OutputItem": [{ "ItemId": "(O)JavCombita.ELE_Processed_K" }], "MinutesUntilReady": 30, "AdditionalConsumedItems": [{"ItemId": "(O)186", "Count": 1}] },
+
+                        // Small Milk (Cost 4)
+                        { "Id": "N_Milk", "Triggers": [{ "Id": "ItemPlacedInMachine", "ItemIds": ["(O)JavCombita.ELE_Fertilizer_N"], "Count": 1 }], "OutputItem": [{ "ItemId": "(O)JavCombita.ELE_Processed_N" }], "MinutesUntilReady": 30, "AdditionalConsumedItems": [{"ItemId": "(O)JavCombita.ELE_Fertilizer_N", "Count": 4}, {"ItemId": "(O)184", "Count": 4}] },
+                        { "Id": "P_Milk", "Triggers": [{ "Id": "ItemPlacedInMachine", "ItemIds": ["(O)JavCombita.ELE_Fertilizer_P"], "Count": 1 }], "OutputItem": [{ "ItemId": "(O)JavCombita.ELE_Processed_P" }], "MinutesUntilReady": 30, "AdditionalConsumedItems": [{"ItemId": "(O)JavCombita.ELE_Fertilizer_P", "Count": 4}, {"ItemId": "(O)184", "Count": 4}] },
+                        { "Id": "K_Milk", "Triggers": [{ "Id": "ItemPlacedInMachine", "ItemIds": ["(O)JavCombita.ELE_Fertilizer_K"], "Count": 1 }], "OutputItem": [{ "ItemId": "(O)JavCombita.ELE_Processed_K" }], "MinutesUntilReady": 30, "AdditionalConsumedItems": [{"ItemId": "(O)JavCombita.ELE_Fertilizer_K", "Count": 4}, {"ItemId": "(O)184", "Count": 4}] }
+                    ]
+                },
+
+                // --- MK2 ---
+                "(BC)JavCombita.ELE_NutrientSpreader_Mk2": {
+                    "WobbleWhileWorking": true,
+                    "LightWhileWorking": true,
+                    "ShowNextIndexWhileWorking": true,
+                    "OutputRules": [
+                        { "Id": "Omni_LMilk", "Triggers": [{ "Id": "ItemPlacedInMachine", "ItemIds": ["(O)JavCombita.ELE_Fertilizer_Omni"], "Count": 1 }], "OutputItem": [{ "ItemId": "(O)JavCombita.ELE_Processed_Omni" }], "MinutesUntilReady": 30, "AdditionalConsumedItems": [{"ItemId": "(O)186", "Count": 1}] },
+                        
+                        { "Id": "N_LMilk", "Triggers": [{ "Id": "ItemPlacedInMachine", "ItemIds": ["(O)JavCombita.ELE_Fertilizer_N"], "Count": 7 }], "OutputItem": [{ "ItemId": "(O)JavCombita.ELE_Processed_N" }], "MinutesUntilReady": 30, "AdditionalConsumedItems": [{"ItemId": "(O)186", "Count": 1}] },
+                        { "Id": "P_LMilk", "Triggers": [{ "Id": "ItemPlacedInMachine", "ItemIds": ["(O)JavCombita.ELE_Fertilizer_P"], "Count": 7 }], "OutputItem": [{ "ItemId": "(O)JavCombita.ELE_Processed_P" }], "MinutesUntilReady": 30, "AdditionalConsumedItems": [{"ItemId": "(O)186", "Count": 1}] },
+                        { "Id": "K_LMilk", "Triggers": [{ "Id": "ItemPlacedInMachine", "ItemIds": ["(O)JavCombita.ELE_Fertilizer_K"], "Count": 7 }], "OutputItem": [{ "ItemId": "(O)JavCombita.ELE_Processed_K" }], "MinutesUntilReady": 30, "AdditionalConsumedItems": [{"ItemId": "(O)186", "Count": 1}] },
+
+                        { "Id": "N_Milk", "Triggers": [{ "Id": "ItemPlacedInMachine", "ItemIds": ["(O)JavCombita.ELE_Fertilizer_N"], "Count": 1 }], "OutputItem": [{ "ItemId": "(O)JavCombita.ELE_Processed_N" }], "MinutesUntilReady": 30, "AdditionalConsumedItems": [{"ItemId": "(O)JavCombita.ELE_Fertilizer_N", "Count": 6}, {"ItemId": "(O)184", "Count": 8}] },
+                        { "Id": "P_Milk", "Triggers": [{ "Id": "ItemPlacedInMachine", "ItemIds": ["(O)JavCombita.ELE_Fertilizer_P"], "Count": 1 }], "OutputItem": [{ "ItemId": "(O)JavCombita.ELE_Processed_P" }], "MinutesUntilReady": 30, "AdditionalConsumedItems": [{"ItemId": "(O)JavCombita.ELE_Fertilizer_P", "Count": 6}, {"ItemId": "(O)184", "Count": 8}] },
+                        { "Id": "K_Milk", "Triggers": [{ "Id": "ItemPlacedInMachine", "ItemIds": ["(O)JavCombita.ELE_Fertilizer_K"], "Count": 1 }], "OutputItem": [{ "ItemId": "(O)JavCombita.ELE_Processed_K" }], "MinutesUntilReady": 30, "AdditionalConsumedItems": [{"ItemId": "(O)JavCombita.ELE_Fertilizer_K", "Count": 6}, {"ItemId": "(O)184", "Count": 8}] }
+                    ]
+                },
+
+                // --- MK3 ---
+                "(BC)JavCombita.ELE_NutrientSpreader_Mk3": {
+                    "WobbleWhileWorking": true,
+                    "LightWhileWorking": true,
+                    "ShowNextIndexWhileWorking": true,
+                    "OutputRules": [
+                        { "Id": "Omni_LMilk", "Triggers": [{ "Id": "ItemPlacedInMachine", "ItemIds": ["(O)JavCombita.ELE_Fertilizer_Omni"], "Count": 1 }], "OutputItem": [{ "ItemId": "(O)JavCombita.ELE_Processed_Omni" }], "MinutesUntilReady": 30, "AdditionalConsumedItems": [{"ItemId": "(O)186", "Count": 1}] },
+                        
+                        { "Id": "N_LMilk", "Triggers": [{ "Id": "ItemPlacedInMachine", "ItemIds": ["(O)JavCombita.ELE_Fertilizer_N"], "Count": 9 }], "OutputItem": [{ "ItemId": "(O)JavCombita.ELE_Processed_N" }], "MinutesUntilReady": 30, "AdditionalConsumedItems": [{"ItemId": "(O)186", "Count": 2}] },
+                        { "Id": "P_LMilk", "Triggers": [{ "Id": "ItemPlacedInMachine", "ItemIds": ["(O)JavCombita.ELE_Fertilizer_P"], "Count": 9 }], "OutputItem": [{ "ItemId": "(O)JavCombita.ELE_Processed_P" }], "MinutesUntilReady": 30, "AdditionalConsumedItems": [{"ItemId": "(O)186", "Count": 2}] },
+                        { "Id": "K_LMilk", "Triggers": [{ "Id": "ItemPlacedInMachine", "ItemIds": ["(O)JavCombita.ELE_Fertilizer_K"], "Count": 9 }], "OutputItem": [{ "ItemId": "(O)JavCombita.ELE_Processed_K" }], "MinutesUntilReady": 30, "AdditionalConsumedItems": [{"ItemId": "(O)186", "Count": 2}] },
+
+                        { "Id": "N_Milk", "Triggers": [{ "Id": "ItemPlacedInMachine", "ItemIds": ["(O)JavCombita.ELE_Fertilizer_N"], "Count": 1 }], "OutputItem": [{ "ItemId": "(O)JavCombita.ELE_Processed_N" }], "MinutesUntilReady": 30, "AdditionalConsumedItems": [{"ItemId": "(O)JavCombita.ELE_Fertilizer_N", "Count": 8}, {"ItemId": "(O)184", "Count": 9}] },
+                        { "Id": "P_Milk", "Triggers": [{ "Id": "ItemPlacedInMachine", "ItemIds": ["(O)JavCombita.ELE_Fertilizer_P"], "Count": 1 }], "OutputItem": [{ "ItemId": "(O)JavCombita.ELE_Processed_P" }], "MinutesUntilReady": 30, "AdditionalConsumedItems": [{"ItemId": "(O)JavCombita.ELE_Fertilizer_P", "Count": 8}, {"ItemId": "(O)184", "Count": 9}] },
+                        { "Id": "K_Milk", "Triggers": [{ "Id": "ItemPlacedInMachine", "ItemIds": ["(O)JavCombita.ELE_Fertilizer_K"], "Count": 1 }], "OutputItem": [{ "ItemId": "(O)JavCombita.ELE_Processed_K" }], "MinutesUntilReady": 30, "AdditionalConsumedItems": [{"ItemId": "(O)JavCombita.ELE_Fertilizer_K", "Count": 8}, {"ItemId": "(O)184", "Count": 9}] }
+                    ]
+                },
+
+                // --- OMEGA ---
+                "(BC)JavCombita.ELE_NutrientSpreader_Omega": {
+                    "WobbleWhileWorking": true,
+                    "LightWhileWorking": true,
+                    "ShowNextIndexWhileWorking": true,
+                    "OutputRules": [
+                        { "Id": "Omni_LMilk", "Triggers": [{ "Id": "ItemPlacedInMachine", "ItemIds": ["(O)JavCombita.ELE_Fertilizer_Omni"], "Count": 1 }], "OutputItem": [{ "ItemId": "(O)JavCombita.ELE_Processed_Omni" }], "MinutesUntilReady": 30, "AdditionalConsumedItems": [{"ItemId": "(O)186", "Count": 1}] },
+                        
+                        { "Id": "N_LMilk", "Triggers": [{ "Id": "ItemPlacedInMachine", "ItemIds": ["(O)JavCombita.ELE_Fertilizer_N"], "Count": 14 }], "OutputItem": [{ "ItemId": "(O)JavCombita.ELE_Processed_N" }], "MinutesUntilReady": 30, "AdditionalConsumedItems": [{"ItemId": "(O)186", "Count": 2}] },
+                        { "Id": "P_LMilk", "Triggers": [{ "Id": "ItemPlacedInMachine", "ItemIds": ["(O)JavCombita.ELE_Fertilizer_P"], "Count": 14 }], "OutputItem": [{ "ItemId": "(O)JavCombita.ELE_Processed_P" }], "MinutesUntilReady": 30, "AdditionalConsumedItems": [{"ItemId": "(O)186", "Count": 2}] },
+                        { "Id": "K_LMilk", "Triggers": [{ "Id": "ItemPlacedInMachine", "ItemIds": ["(O)JavCombita.ELE_Fertilizer_K"], "Count": 14 }], "OutputItem": [{ "ItemId": "(O)JavCombita.ELE_Processed_K" }], "MinutesUntilReady": 30, "AdditionalConsumedItems": [{"ItemId": "(O)186", "Count": 2}] },
+
+                        { "Id": "N_Milk", "Triggers": [{ "Id": "ItemPlacedInMachine", "ItemIds": ["(O)JavCombita.ELE_Fertilizer_N"], "Count": 1 }], "OutputItem": [{ "ItemId": "(O)JavCombita.ELE_Processed_N" }], "MinutesUntilReady": 30, "AdditionalConsumedItems": [{"ItemId": "(O)JavCombita.ELE_Fertilizer_N", "Count": 13}, {"ItemId": "(O)184", "Count": 14}] },
+                        { "Id": "P_Milk", "Triggers": [{ "Id": "ItemPlacedInMachine", "ItemIds": ["(O)JavCombita.ELE_Fertilizer_P"], "Count": 1 }], "OutputItem": [{ "ItemId": "(O)JavCombita.ELE_Processed_P" }], "MinutesUntilReady": 30, "AdditionalConsumedItems": [{"ItemId": "(O)JavCombita.ELE_Fertilizer_P", "Count": 13}, {"ItemId": "(O)184", "Count": 14}] },
+                        { "Id": "K_Milk", "Triggers": [{ "Id": "ItemPlacedInMachine", "ItemIds": ["(O)JavCombita.ELE_Fertilizer_K"], "Count": 1 }], "OutputItem": [{ "ItemId": "(O)JavCombita.ELE_Processed_K" }], "MinutesUntilReady": 30, "AdditionalConsumedItems": [{"ItemId": "(O)JavCombita.ELE_Fertilizer_K", "Count": 13}, {"ItemId": "(O)184", "Count": 14}] }
+                    ]
+                }
+            }
+        },
+
+        // ============================================================
+        // 5. RECETAS DE CRAFTEO
         // ============================================================
         {
             "Action": "EditData",
             "Target": "Data/CraftingRecipes",
             "Entries": {
-                // Shelter: 100 Wood, 50 Hardwood, 4 Iron Bar, 20 Copper Bar
                 "Ladybug Shelter": "388 100 709 50 335 4 334 20/Home/JavCombita.ELE_LadybugShelter/false/null",
-                
-                // Analyzer: 4 Iron Bar, 10 Copper Bar, 5 Coal (382)
                 "Soil Analyzer": "335 4 334 10 382 5/Home/JavCombita.ELE_SoilAnalyzer/false/null",
                 
-                // Spreader Base: 5 Iridium, 5 Gold, 20 Iron, 25 Solar Essence, Wood/Hardwood
-                "Nutrient Spreader": "337 5 336 5 335 20 768 25 388 100 709 50/Home/JavCombita.ELE_NutrientSpreader/false/null",
-
-                // Upgrade Mk2 (7x7): Requires Base + 5 Iridium + 10 Refined Quartz (338)
-                "Nutrient Spreader Mk2": "JavCombita.ELE_NutrientSpreader 1 337 5 338 10/Home/JavCombita.ELE_NutrientSpreader_Mk2/false/null",
-
-                // Upgrade Mk3 (9x9): Requires Mk2 + 1 Prismatic Shard (896) + 20 Cinder Shard (848)
+                "Nutrient Spreader": "336 5 335 20 768 25 388 100 709 50/Home/JavCombita.ELE_NutrientSpreader/false/null",
+                "Nutrient Spreader Mk2": "JavCombita.ELE_NutrientSpreader 1 337 5 896 1/Home/JavCombita.ELE_NutrientSpreader_Mk2/false/null",
                 "Nutrient Spreader Mk3": "JavCombita.ELE_NutrientSpreader_Mk2 1 896 1 848 20/Home/JavCombita.ELE_NutrientSpreader_Mk3/false/null",
-
-                // Upgrade Omega (15x15): Requires Mk3 + 1 Prismatic Shard + 5 Radioactive Bar (910)
                 "Nutrient Spreader Omega": "JavCombita.ELE_NutrientSpreader_Mk3 1 896 1 910 5/Home/JavCombita.ELE_NutrientSpreader_Omega/false/null",
 
-                // Boosters
                 "Nitrogen Booster": "92 20/Field/JavCombita.ELE_Fertilizer_N/false/null",
                 "Phosphorus Booster": "330 2/Field/JavCombita.ELE_Fertilizer_P/false/null",
                 "Potassium Booster": "152 20/Field/JavCombita.ELE_Fertilizer_K/false/null",
-                
-                // Omni Mix: Farming 7 unlock
-                "Omni-Nutrient Mix": "JavCombita.ELE_Fertilizer_N 1 JavCombita.ELE_Fertilizer_P 1 JavCombita.ELE_Fertilizer_K 1/Field/JavCombita.ELE_Fertilizer_Omni/false/Farming 7"
+                "Omni-Nutrient Mix": "JavCombita.ELE_Fertilizer_N 3 JavCombita.ELE_Fertilizer_P 3 JavCombita.ELE_Fertilizer_K 3/Field/JavCombita.ELE_Fertilizer_Omni/false/Farming 7"
             }
         },
 
         // ============================================================
-        // 5. CONTENIDO DE CORREOS
+        // 6. CORREOS Y TRIGGERS
         // ============================================================
         {
             "Action": "EditData",
@@ -192,50 +272,40 @@
             "Entries": {
                 "JavCombita.ELE_RobinShelterMail": "{{i18n:mail.robin_shelter.body}}[#]{{i18n:mail.robin_shelter.title}}",
                 "JavCombita.ELE_ClintAnalyzerMail": "{{i18n:mail.clint_analyzer.body}}[#]{{i18n:mail.clint_analyzer.title}}",
-                
-                // Pierre sends ONLY Base Spreader recipe
                 "JavCombita.ELE_PierreSpreaderMail": "{{i18n:mail.pierre_spreader.body}}[#]{{i18n:mail.pierre_spreader.title}}%item craftingRecipe Nutrient Spreader %%",
-
-                // Mr. Qi sends the UPGRADES
                 "JavCombita.ELE_QiUpgradeMail": "{{i18n:mail.qi_upgrades.body}}[#]{{i18n:mail.qi_upgrades.title}}%item craftingRecipe Nutrient Spreader Mk2 %%item craftingRecipe Nutrient Spreader Mk3 %%item craftingRecipe Nutrient Spreader Omega %%",
-
                 "JavCombita.ELE_DemetriusBoosterMail": "{{i18n:mail.demetrius_n.body}}[#]{{i18n:mail.demetrius_n.title}}%item craftingRecipe Nitrogen Booster %%",
                 "JavCombita.ELE_EvelynBoosterMail": "{{i18n:mail.evelyn_p.body}}[#]{{i18n:mail.evelyn_p.title}}%item craftingRecipe Phosphorus Booster %%",
                 "JavCombita.ELE_JodiBoosterMail": "{{i18n:mail.jodi_k.body}}[#]{{i18n:mail.jodi_k.title}}%item craftingRecipe Potassium Booster %%"
             }
         },
-
-        // ============================================================
-        // 6. LÓGICA DE ENTREGA DE CORREOS (Trigger Actions 1.6)
-        // ============================================================
         {
             "Action": "EditData",
             "Target": "Data/TriggerActions",
             "Entries": {
                 "JavCombita.ELE_DeliverRobin": {
                     "Trigger": "DayStarted",
-                    "Condition": "!PLAYER_HAS_MAIL Current JavCombita.ELE_RobinShelterMail, DAYS_PLAYED 2",
+                    "Condition": "DAYS_PLAYED 2, !PLAYER_HAS_MAIL Current JavCombita.ELE_RobinShelterMail",
                     "Actions": ["AddMail Current JavCombita.ELE_RobinShelterMail"]
                 },
                 "JavCombita.ELE_DeliverClint": {
                     "Trigger": "DayStarted",
-                    "Condition": "!PLAYER_HAS_MAIL Current JavCombita.ELE_ClintAnalyzerMail, DAYS_PLAYED 5",
+                    "Condition": "DAYS_PLAYED 5, !PLAYER_HAS_MAIL Current JavCombita.ELE_ClintAnalyzerMail",
                     "Actions": ["AddMail Current JavCombita.ELE_ClintAnalyzerMail"]
                 },
                 "JavCombita.ELE_DeliverPierre": {
                     "Trigger": "DayStarted",
-                    "Condition": "!PLAYER_HAS_MAIL Current JavCombita.ELE_PierreSpreaderMail, PLAYER_SKILL Current Farming 8, RELATIONSHIP Pierre 2000",
+                    "Condition": "PLAYER_SKILL Current Farming 8, RELATIONSHIP Pierre 2000, !PLAYER_HAS_MAIL Current JavCombita.ELE_PierreSpreaderMail",
                     "Actions": ["AddMail Current JavCombita.ELE_PierreSpreaderMail"]
                 },
-                // Mr. Qi delivers upgrades IF player has Pierre's mail
                 "JavCombita.ELE_DeliverQi": {
                     "Trigger": "DayStarted",
-                    "Condition": "!PLAYER_HAS_MAIL Current JavCombita.ELE_QiUpgradeMail, PLAYER_HAS_MAIL Current JavCombita.ELE_PierreSpreaderMail",
+                    "Condition": "PLAYER_HAS_MAIL Current JavCombita.ELE_PierreSpreaderMail, !PLAYER_HAS_MAIL Current JavCombita.ELE_QiUpgradeMail",
                     "Actions": ["AddMail Current JavCombita.ELE_QiUpgradeMail"]
                 },
                 "JavCombita.ELE_DeliverBoosters": {
                     "Trigger": "DayStarted",
-                    "Condition": "PLAYER_HAS_MAIL Current JavCombita.ELE_ClintAnalyzerMail",
+                    "Condition": "PLAYER_HAS_MAIL Current JavCombita.ELE_ClintAnalyzerMail, !PLAYER_HAS_MAIL Current JavCombita.ELE_DemetriusBoosterMail",
                     "Actions": [
                         "AddMail Current JavCombita.ELE_DemetriusBoosterMail",
                         "AddMail Current JavCombita.ELE_EvelynBoosterMail",

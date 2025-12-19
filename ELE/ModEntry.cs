@@ -69,11 +69,30 @@ namespace ELE.Core
             Helper.Events.GameLoop.DayStarted += OnDayStarted;
             Helper.Events.GameLoop.GameLaunched += OnGameLaunched;
             Helper.Events.GameLoop.TimeChanged += OnTimeChanged;
+            Helper.Events.Input.ButtonPressed += OnButtonPressed; 
+        }
+
+        private void OnButtonPressed(object sender, ButtonPressedEventArgs e)
+        {
+            if (!Context.IsWorldReady) return;
+
+            // Detección de clic en Ladybug Shelter (Fix Android)
+            if (e.Button.IsActionButton() || e.Button == SButton.MouseLeft) 
+            {
+                Vector2 clickedTile = e.Cursor.Tile;
+                if (Game1.currentLocation.objects.TryGetValue(clickedTile, out StardewValley.Object obj))
+                {
+                    if (obj.ItemId == "JavCombita.ELE_LadybugShelter")
+                    {
+                        Game1.drawObjectDialogue("The Ladybug Shelter is buzzing with activity.");
+                        Helper.Input.Suppress(e.Button);
+                    }
+                }
+            }
         }
 
         private void RegisterConsoleCommands()
         {
-            // --- COMANDOS DE JUEGO ---
             Helper.ConsoleCommands.Add("ele_invasion", "Forces a monster invasion.", (cmd, args) => 
             {
                 if (!Context.IsWorldReady) return;
@@ -93,12 +112,9 @@ namespace ELE.Core
                  if (!Context.IsWorldReady) return;
                  var tile = Game1.currentCursorTile;
                  var data = this.Ecosystem.GetSoilDataAt(Game1.currentLocation, tile);
-                 // Este mensaje ya estaba traducido en EcosystemManager, lo usamos aquí también
                  string msg = Helper.Translation.Get("message.soil_analysis", new { val1 = (int)data.Nitrogen, val2 = (int)data.Phosphorus, val3 = (int)data.Potassium });
                  Monitor.Log($"Tile {tile}: {msg}", LogLevel.Alert);
             });
-
-            // --- COMANDOS DE DEBUG / CHEATS ---
 
             Helper.ConsoleCommands.Add("ele_trigger_mail", "Forces delivery of all ELE mails.", (cmd, args) => 
             {
@@ -125,7 +141,6 @@ namespace ELE.Core
             Helper.ConsoleCommands.Add("ele_unlock_recipes", "Unlocks all ELE crafting recipes.", (cmd, args) =>
             {
                 if (!Context.IsWorldReady) return;
-                
                 string[] recipes = {
                     "Ladybug Shelter",
                     "Soil Analyzer",
@@ -148,10 +163,6 @@ namespace ELE.Core
                         unlockedCount++;
                         Monitor.Log(Helper.Translation.Get("debug.recipe_learned", new { val1 = recipe }), LogLevel.Info);
                     }
-                    else
-                    {
-                        // Monitor.Log(Helper.Translation.Get("debug.recipe_already_known", new { val1 = recipe }), LogLevel.Trace);
-                    }
                 }
                 
                 if (unlockedCount > 0)
@@ -163,13 +174,8 @@ namespace ELE.Core
             Helper.ConsoleCommands.Add("ele_add_items", "Adds ELE items. Usage: ele_add_items <n>", (cmd, args) =>
             {
                 if (!Context.IsWorldReady) return;
-                
                 int amount = 1;
-                if (args.Length > 0 && !int.TryParse(args[0], out amount))
-                {
-                    Monitor.Log(Helper.Translation.Get("debug.invalid_amount"), LogLevel.Warn);
-                    amount = 1;
-                }
+                if (args.Length > 0 && !int.TryParse(args[0], out amount)) amount = 1;
 
                 string[] itemIds = {
                     "(O)JavCombita.ELE_SoilAnalyzer",
@@ -198,7 +204,6 @@ namespace ELE.Core
                         Monitor.Log(Helper.Translation.Get("debug.item_error", new { val1 = id }), LogLevel.Error);
                     }
                 }
-                
                 Monitor.Log(Helper.Translation.Get("debug.items_added", new { val1 = amount, val2 = addedCount }), LogLevel.Alert);
             });
 
@@ -215,20 +220,10 @@ namespace ELE.Core
             if (configMenu != null)
             {
                 configMenu.Register(ModManifest, () => Config = new ModConfig(), () => Helper.WriteConfig(Config));
-                
                 configMenu.AddSectionTitle(ModManifest, () => Helper.Translation.Get("config.section.general"));
                 configMenu.AddBoolOption(ModManifest, () => Config.EnablePestInvasions, val => Config.EnablePestInvasions = val, () => Helper.Translation.Get("config.enableInvasions"));
                 configMenu.AddBoolOption(ModManifest, () => Config.EnableMonsterMigration, val => Config.EnableMonsterMigration = val, () => Helper.Translation.Get("config.enableMigration"));
-                
-                configMenu.AddTextOption(
-                    ModManifest, 
-                    () => Config.InvasionDifficulty, 
-                    val => Config.InvasionDifficulty = val, 
-                    () => Helper.Translation.Get("config.invasionDifficulty"), 
-                    null, 
-                    new[] { "Easy", "Medium", "Hard", "VeryHard" }
-                );
-                
+                configMenu.AddTextOption(ModManifest, () => Config.InvasionDifficulty, val => Config.InvasionDifficulty = val, () => Helper.Translation.Get("config.invasionDifficulty"), null, new[] { "Easy", "Medium", "Hard", "VeryHard" });
                 configMenu.AddSectionTitle(ModManifest, () => Helper.Translation.Get("config.section.nutrients"));
                 configMenu.AddBoolOption(ModManifest, () => Config.EnableNutrientCycle, val => Config.EnableNutrientCycle = val, () => Helper.Translation.Get("config.enableNutrients"));
             }

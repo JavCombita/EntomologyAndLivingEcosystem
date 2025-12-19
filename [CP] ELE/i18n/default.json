@@ -14,13 +14,13 @@
   "item.fert_omni.desc": "The ultimate soil food. Fully restores NPK.",
   
   "item.spreader.name": "Nutrient Spreader",
-  "item.spreader.desc": "Automates fertilization (5x5 area). Input: Chest above.",
+  "item.spreader.desc": "5x5 Area. Input: 1 Booster (Consumes 4 extra + Milk from inventory).",
   "item.spreader_mk2.name": "Nutrient Spreader Mk2",
-  "item.spreader_mk2.desc": "Improved range (7x7 area). Input: Chest above.",
+  "item.spreader_mk2.desc": "7x7 Area. Input: 1 Booster (Consumes 6 extra + Milk from inventory).",
   "item.spreader_mk3.name": "Nutrient Spreader Mk3",
-  "item.spreader_mk3.desc": "Advanced range (9x9 area). Input: Chest above.",
+  "item.spreader_mk3.desc": "9x9 Area. Input: 1 Booster (Consumes 8 extra + Milk from inventory).",
   "item.spreader_omega.name": "Nutrient Spreader Omega",
-  "item.spreader_omega.desc": "Ultimate range (15x15 area). Input: Chest above.",
+  "item.spreader_omega.desc": "15x15 Area. Input: 1 Booster (Consumes 13 extra + Milk from inventory).",
 
   "mail.robin_shelter.title": "Old Blueprints",
   "mail.robin_shelter.body": "Hey @,^I found these old blueprints for a 'Ladybug Shelter' in the attic. My grandfather swore by them to keep pests away naturally.^I'm selling the recipe at the shop now if you want to try it out!^   - Robin",

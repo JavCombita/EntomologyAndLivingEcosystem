@@ -86,6 +86,7 @@ namespace ELE.Core.Systems
 
             SaveSoilDataAt(location, tile, data);
 
+            // Resetear el flag de booster si no hay cultivo
             if (dirt.crop == null)
             {
                 location.modData.Remove($"{BoosterAppliedKey}/{tile.X},{tile.Y}");
@@ -185,6 +186,7 @@ namespace ELE.Core.Systems
             bool isBooster = fertilizerId.StartsWith("JavCombita.ELE_Fertilizer");
             string boosterKey = $"{BoosterAppliedKey}/{tile.X},{tile.Y}";
             
+            // Lógica de Boosters (Independiente del vanilla fertilizer)
             if (isBooster)
             {
                 bool hasApplied = location.modData.TryGetValue(boosterKey, out string appliedType);
@@ -192,26 +194,32 @@ namespace ELE.Core.Systems
 
                 if (hasApplied)
                 {
+                     // Si ya tiene booster, SOLO Omni puede sobrescribir a uno NO Omni
                      if (isOmni && !appliedType.Contains("Omni")) 
                      {
-                        // Permitir reemplazo
+                        // Permitir
                      }
                      else 
                      {
+                        // Bloquear (ya tiene booster de este ciclo)
                         return; 
                      }
                 }
                 location.modData[boosterKey] = fertilizerId;
             }
 
+            // Aplicación de Nutrientes
             SoilData data = GetSoilDataAt(location, tile);
             
             switch (fertilizerId)
             {
+                // Vanilla
                 case "(O)368": case "368": 
                     data.Nitrogen += 30f; break;
                 case "(O)369": case "369": 
                     data.Nitrogen += 60f; data.Phosphorus += 30f; break;
+                
+                // Boosters
                 case "JavCombita.ELE_Fertilizer_N": 
                     data.Nitrogen += 80f; break;
                 case "JavCombita.ELE_Fertilizer_P": 
@@ -229,7 +237,12 @@ namespace ELE.Core.Systems
             data.Potassium = Math.Min(data.Potassium, 100f);
             
             SaveSoilDataAt(location, tile, data);
-            Game1.createRadialDebris(location, 12, (int)tile.X, (int)tile.Y, 6, false);
+            
+            // Efecto visual solo si no es vanilla (para no spammear si el vanilla ya lo hizo)
+            if (isBooster)
+            {
+                Game1.createRadialDebris(location, 12, (int)tile.X, (int)tile.Y, 6, false);
+            }
         }
     }
     
