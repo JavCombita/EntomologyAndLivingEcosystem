@@ -123,16 +123,16 @@ namespace ELE.Core
                 if (!Context.IsWorldReady) return;
                 
                 string[] recipes = {
-                    "Ladybug Shelter",
-                    "Soil Analyzer",
-                    "Nutrient Spreader",
-                    "Nutrient Spreader Mk2",
-                    "Nutrient Spreader Mk3",
-                    "Nutrient Spreader Omega",
-                    "Nitrogen Booster",
-                    "Phosphorus Booster",
-                    "Potassium Booster",
-                    "Omni-Nutrient Mix"
+                    "Ladybug_Shelter",
+                    "Soil_Analyzer",
+                    "Nutrient_Spreader",
+                    "Nutrient_Spreader_Mk2",
+                    "Nutrient_Spreader_Mk3",
+                    "Nutrient_Spreader_Omega",
+                    "Nitrogen_Booster",
+                    "Phosphorus_Booster",
+                    "Potassium_Booster",
+                    "Omni_Nutrient_Mix"
                 };
 
                 int unlockedCount = 0;

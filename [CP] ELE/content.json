@@ -163,30 +163,30 @@
             "Target": "Data/CraftingRecipes",
             "Entries": {
                 // Shelter
-                "Ladybug Shelter": "388 100 709 50 335 4 334 20/Home/JavCombita.ELE_LadybugShelter/false/null",
+                "Ladybug_Shelter": "388 100 709 50 335 4 334 20/Home/JavCombita.ELE_LadybugShelter/false/null",
                 
                 // Analyzer
-                "Soil Analyzer": "335 4 334 10 382 5/Home/JavCombita.ELE_SoilAnalyzer/false/null",
+                "Soil_Analyzer": "335 4 334 10 382 5/Home/JavCombita.ELE_SoilAnalyzer/false/null",
                 
                 // Spreader Base
-                "Nutrient Spreader": "336 5 335 20 768 25 388 100 709 50/Home/JavCombita.ELE_NutrientSpreader/false/null",
+                "Nutrient_Spreader": "336 5 335 20 768 25 388 100 709 50/Home/JavCombita.ELE_NutrientSpreader/false/null",
 
                 // Mk2: Prismatic Shard (896)
-                "Nutrient Spreader Mk2": "JavCombita.ELE_NutrientSpreader 1 337 5 896 1/Home/JavCombita.ELE_NutrientSpreader_Mk2/false/null",
+                "Nutrient_Spreader_Mk2": "JavCombita.ELE_NutrientSpreader 1 337 5 896 1/Home/JavCombita.ELE_NutrientSpreader_Mk2/false/null",
 
                 // Mk3
-                "Nutrient Spreader Mk3": "JavCombita.ELE_NutrientSpreader_Mk2 1 896 1 848 20/Home/JavCombita.ELE_NutrientSpreader_Mk3/false/null",
+                "Nutrient_Spreader_Mk3": "JavCombita.ELE_NutrientSpreader_Mk2 1 896 1 848 20/Home/JavCombita.ELE_NutrientSpreader_Mk3/false/null",
 
                 // Omega
-                "Nutrient Spreader Omega": "JavCombita.ELE_NutrientSpreader_Mk3 1 896 1 910 5/Home/JavCombita.ELE_NutrientSpreader_Omega/false/null",
+                "Nutrient_Spreader_Omega": "JavCombita.ELE_NutrientSpreader_Mk3 1 896 1 910 5/Home/JavCombita.ELE_NutrientSpreader_Omega/false/null",
 
                 // Boosters
-                "Nitrogen Booster": "92 20/Field/JavCombita.ELE_Fertilizer_N/false/null",
-                "Phosphorus Booster": "330 2/Field/JavCombita.ELE_Fertilizer_P/false/null",
-                "Potassium Booster": "152 20/Field/JavCombita.ELE_Fertilizer_K/false/null",
+                "Nitrogen_Booster": "92 20/Field/JavCombita.ELE_Fertilizer_N/false/null",
+                "Phosphorus_Booster": "330 2/Field/JavCombita.ELE_Fertilizer_P/false/null",
+                "Potassium_Booster": "152 20/Field/JavCombita.ELE_Fertilizer_K/false/null",
                 
                 // Omni Mix: 3 of each
-                "Omni-Nutrient Mix": "JavCombita.ELE_Fertilizer_N 3 JavCombita.ELE_Fertilizer_P 3 JavCombita.ELE_Fertilizer_K 3/Field/JavCombita.ELE_Fertilizer_Omni/false/Farming 7"
+                "Omni_Nutrient_Mix": "JavCombita.ELE_Fertilizer_N 3 JavCombita.ELE_Fertilizer_P 3 JavCombita.ELE_Fertilizer_K 3/Field/JavCombita.ELE_Fertilizer_Omni/false/Farming 7"
             }
         },
 
@@ -205,15 +205,15 @@
                 "JavCombita.ELE_ClintAnalyzerMail": "{{i18n:mail.clint_analyzer.body}}[#]{{i18n:mail.clint_analyzer.title}}",
                 
                 // Pierre (Spreaders) - Receta adjunta con comillas
-                "JavCombita.ELE_PierreSpreaderMail": "{{i18n:mail.pierre_spreader.body}}%item craftingRecipe \"Nutrient Spreader\"%%[#]{{i18n:mail.pierre_spreader.title}}",
+                "JavCombita.ELE_PierreSpreaderMail": "{{i18n:mail.pierre_spreader.body}}%item craftingRecipe Nutrient_Spreader %%[#]{{i18n:mail.pierre_spreader.title}}",
                 
                 // Qi (Upgrades) - Recetas adjuntas separadas con %item
-                "JavCombita.ELE_QiUpgradeMail": "{{i18n:mail.qi_upgrades.body}}%item craftingRecipe \"Nutrient Spreader Mk2\"%% %item craftingRecipe \"Nutrient Spreader Mk3\"%% %item craftingRecipe \"Nutrient Spreader Omega\"%%[#]{{i18n:mail.qi_upgrades.title}}",
+                "JavCombita.ELE_QiUpgradeMail": "{{i18n:mail.qi_upgrades.body}}%item craftingRecipe Nutrient_Spreader_Mk2 %% %item craftingRecipe Nutrient_Spreader_Mk3 %% %item craftingRecipe Nutrient_Spreader_Omega %%[#]{{i18n:mail.qi_upgrades.title}}",
                 
                 // Boosters - Recetas adjuntas con comillas
-                "JavCombita.ELE_DemetriusBoosterMail": "{{i18n:mail.demetrius_n.body}}%item craftingRecipe \"Nitrogen Booster\"%%[#]{{i18n:mail.demetrius_n.title}}",
-                "JavCombita.ELE_EvelynBoosterMail": "{{i18n:mail.evelyn_p.body}}%item craftingRecipe \"Phosphorus Booster\"%%[#]{{i18n:mail.evelyn_p.title}}",
-                "JavCombita.ELE_JodiBoosterMail": "{{i18n:mail.jodi_k.body}}%item craftingRecipe \"Potassium Booster\"%%[#]{{i18n:mail.jodi_k.title}}"
+                "JavCombita.ELE_DemetriusBoosterMail": "{{i18n:mail.demetrius_n.body}}%item craftingRecipe Nitrogen_Booster %%[#]{{i18n:mail.demetrius_n.title}}",
+                "JavCombita.ELE_EvelynBoosterMail": "{{i18n:mail.evelyn_p.body}}%item craftingRecipe Phosphorus_Booster %%[#]{{i18n:mail.evelyn_p.title}}",
+                "JavCombita.ELE_JodiBoosterMail": "{{i18n:mail.jodi_k.body}}%item craftingRecipe Potassium_Booster %%[#]{{i18n:mail.jodi_k.title}}"
             }
         },
 
