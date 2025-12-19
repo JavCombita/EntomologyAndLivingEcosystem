@@ -76,23 +76,14 @@ namespace ELE.Core
         {
             if (!Context.IsWorldReady) return;
 
-            // Detección de clic en Ladybug Shelter (Fix Android)
-            if (e.Button.IsActionButton() || e.Button == SButton.MouseLeft) 
-            {
-                Vector2 clickedTile = e.Cursor.Tile;
-                if (Game1.currentLocation.objects.TryGetValue(clickedTile, out StardewValley.Object obj))
-                {
-                    if (obj.ItemId == "JavCombita.ELE_LadybugShelter")
-                    {
-                        Game1.drawObjectDialogue("The Ladybug Shelter is buzzing with activity.");
-                        Helper.Input.Suppress(e.Button);
-                    }
-                }
-            }
+            // Delegar la interacción a los sistemas especializados
+            this.Ecosystem.HandleInteraction(e);
+            this.Machines.HandleInteraction(e);
         }
 
         private void RegisterConsoleCommands()
         {
+            // COMANDOS DE JUEGO
             Helper.ConsoleCommands.Add("ele_invasion", "Forces a monster invasion.", (cmd, args) => 
             {
                 if (!Context.IsWorldReady) return;
@@ -116,6 +107,7 @@ namespace ELE.Core
                  Monitor.Log($"Tile {tile}: {msg}", LogLevel.Alert);
             });
 
+            // COMANDOS DE DEBUG / CHEATS
             Helper.ConsoleCommands.Add("ele_trigger_mail", "Forces delivery of all ELE mails.", (cmd, args) => 
             {
                 if (!Context.IsWorldReady) return;
@@ -141,6 +133,7 @@ namespace ELE.Core
             Helper.ConsoleCommands.Add("ele_unlock_recipes", "Unlocks all ELE crafting recipes.", (cmd, args) =>
             {
                 if (!Context.IsWorldReady) return;
+                
                 string[] recipes = {
                     "Ladybug Shelter",
                     "Soil Analyzer",
@@ -174,6 +167,7 @@ namespace ELE.Core
             Helper.ConsoleCommands.Add("ele_add_items", "Adds ELE items. Usage: ele_add_items <n>", (cmd, args) =>
             {
                 if (!Context.IsWorldReady) return;
+                
                 int amount = 1;
                 if (args.Length > 0 && !int.TryParse(args[0], out amount)) amount = 1;
 
@@ -210,7 +204,14 @@ namespace ELE.Core
             Helper.ConsoleCommands.Add("ele_list_items", "Lists all items defined by ELE.", (cmd, args) => 
             {
                 if (!Context.IsWorldReady) return;
-                // ... (Listas de items no necesitan traducción, son datos crudos para el dev) ...
+                // Listado crudo para desarrollo, no requiere traducción
+                Monitor.Log("--- ELE OBJECTS ---", LogLevel.Info);
+                var objData = Game1.content.Load<Dictionary<string, StardewValley.GameData.Objects.ObjectData>>("Data/Objects");
+                foreach(var kvp in objData) {
+                    if (kvp.Key.StartsWith("JavCombita.ELE")) {
+                        Monitor.Log($"ID: {kvp.Key} | Name: {kvp.Value.Name}", LogLevel.Info);
+                    }
+                }
             });
         }
 
@@ -226,6 +227,9 @@ namespace ELE.Core
                 configMenu.AddTextOption(ModManifest, () => Config.InvasionDifficulty, val => Config.InvasionDifficulty = val, () => Helper.Translation.Get("config.invasionDifficulty"), null, new[] { "Easy", "Medium", "Hard", "VeryHard" });
                 configMenu.AddSectionTitle(ModManifest, () => Helper.Translation.Get("config.section.nutrients"));
                 configMenu.AddBoolOption(ModManifest, () => Config.EnableNutrientCycle, val => Config.EnableNutrientCycle = val, () => Helper.Translation.Get("config.enableNutrients"));
+                configMenu.AddNumberOption(ModManifest, () => Config.NutrientDepletionMultiplier, val => Config.NutrientDepletionMultiplier = val, () => Helper.Translation.Get("config.depletionMultiplier"), null, 0.1f, 5.0f);
+                configMenu.AddSectionTitle(ModManifest, () => Helper.Translation.Get("config.section.visuals"));
+                configMenu.AddBoolOption(ModManifest, () => Config.ShowOverlayOnHold, val => Config.ShowOverlayOnHold = val, () => Helper.Translation.Get("config.showOverlay"));
             }
         }
 

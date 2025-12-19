@@ -22,6 +22,7 @@
   "notification.invasion_cleared": "The farm is safe... for now.",
   
   "message.soil_analysis": "Soil: N:{{val1}}% P:{{val2}}% K:{{val3}}%",
+  "message.shelter_count": "This shelter has intercepted {{count}} pest attacks.",
 
   "machine.started": "Nutrient Spreader activated. Spreading in 30 minutes.",
   "machine.busy": "System Busy. Operation in progress.",
