@@ -13,157 +13,180 @@ namespace ELE.Core.Systems
     {
         private readonly ModEntry Mod;
         
-        // IDs
+        // IDs Parciales (Para coincidencia flexible con .Contains)
         private const string SpreaderBase = "JavCombita.ELE_NutrientSpreader";
-        private const string SpreaderMk2  = "JavCombita.ELE_NutrientSpreader_Mk2";
-        private const string SpreaderMk3  = "JavCombita.ELE_NutrientSpreader_Mk3";
-        private const string SpreaderOmega= "JavCombita.ELE_NutrientSpreader_Omega";
+        private const string SpreaderMk2  = "Mk2"; // Parte única del ID
+        private const string SpreaderMk3  = "Mk3";
+        private const string SpreaderOmega= "Omega";
 
-        // IDs Items
-        private const string BoostN = "JavCombita.ELE_Fertilizer_N";
-        private const string BoostP = "JavCombita.ELE_Fertilizer_P";
-        private const string BoostK = "JavCombita.ELE_Fertilizer_K";
+        // IDs Boosters
         private const string BoostOmni = "JavCombita.ELE_Fertilizer_Omni";
-        private const string Milk = "(O)184";
-        private const string LargeMilk = "(O)186";
+        private const string BoostTag = "JavCombita.ELE_Fertilizer"; // Parte común
+
+        // IDs Leche (Vanilla) - Buscamos por el número para evitar problemas con (O)
+        private const string MilkId = "184";
+        private const string LargeMilkId = "186";
 
         public MachineLogic(ModEntry mod)
         {
             this.Mod = mod;
+            // Solo nos suscribimos al TimeChanged aquí, el input viene de ModEntry
             mod.Helper.Events.GameLoop.TimeChanged += OnTimeChanged;
         }
 
         public void HandleInteraction(ButtonPressedEventArgs e)
         {
-            // Solo actuar en interacción principal (Botón derecho / Toque)
-            if (!e.Button.IsActionButton()) return;
+            // Permitir clic derecho (PC Acción) o clic izquierdo (Android Tap)
+            if (!e.Button.IsActionButton() && e.Button != SButton.MouseLeft) return;
 
             Vector2 tile = e.Cursor.Tile;
             GameLocation location = Game1.currentLocation;
 
-            if (location.objects.TryGetValue(tile, out StardewValley.Object machine) && IsSpreader(machine.ItemId))
+            // Intentar obtener objeto en el tile
+            if (location.objects.TryGetValue(tile, out StardewValley.Object machine))
             {
-                // 1. Si está ocupada
-                if (machine.modData.ContainsKey("ele_finish_time")) {
-                    Game1.drawObjectDialogue(Mod.Helper.Translation.Get("machine.busy"));
-                    Mod.Helper.Input.Suppress(e.Button);
-                    return;
+                // Validación Flexible: ¿El ID contiene la base de nuestro mod?
+                if (machine.ItemId != null && machine.ItemId.Contains("JavCombita.ELE_NutrientSpreader"))
+                {
+                    Mod.Monitor.Log($"[ELE Debug] Interaction detected with Machine: {machine.ItemId} at {tile}", LogLevel.Trace);
+                    HandleSpreaderClick(machine, e.Button);
                 }
-
-                // 2. Check Item en mano
-                Item held = Game1.player.CurrentItem;
-                if (held == null) return; 
-
-                if (!IsBooster(held.ItemId)) {
-                    Game1.drawObjectDialogue(Mod.Helper.Translation.Get("machine.invalid_input"));
-                    Mod.Helper.Input.Suppress(e.Button);
-                    return;
-                }
-
-                // 3. Procesar Input
-                AttemptToStart(machine, held);
-                Mod.Helper.Input.Suppress(e.Button);
             }
         }
 
-        private void AttemptToStart(StardewValley.Object machine, Item heldBooster)
+        private void HandleSpreaderClick(StardewValley.Object machine, SButton button)
         {
-            // Calcular Costos
-            CalculateCosts(machine.ItemId, heldBooster.ItemId, out int bCost, out int mCost, out int lmCost);
-
-            // Verificar Booster
-            if (heldBooster.Stack < bCost) {
-                ShowMissingMessage(bCost, mCost, lmCost, heldBooster.ItemId);
+            // 1. Evitar interacción si se usa herramienta de remoción (Pico/Hacha)
+            if (Game1.player.CurrentTool != null && Game1.player.CurrentTool is StardewValley.Tools.Pickaxe or StardewValley.Tools.Axe) 
+            {
+                Mod.Monitor.Log("[ELE Debug] Interaction skipped: Player holding removal tool.", LogLevel.Trace);
                 return;
             }
 
-            // Verificar Leche (Prioriza Large)
-            Item milkItem = Game1.player.Items.FirstOrDefault(i => i?.ItemId == LargeMilk && i.Stack >= lmCost);
+            // 2. Verificar si está ocupada
+            if (machine.modData.ContainsKey("ele_finish_time")) 
+            {
+                Game1.drawObjectDialogue(Mod.Helper.Translation.Get("machine.busy"));
+                Mod.Helper.Input.Suppress(button);
+                return;
+            }
+
+            // 3. Validar Item en Mano
+            Item held = Game1.player.CurrentItem;
+            
+            if (held == null) 
+            {
+                Mod.Monitor.Log("[ELE Debug] Interaction skipped: Empty hand.", LogLevel.Trace);
+                return; // Mano vacía, permitir inspección normal o no hacer nada
+            }
+
+            Mod.Monitor.Log($"[ELE Debug] Player holding item: {held.ItemId} (Stack: {held.Stack})", LogLevel.Trace);
+
+            // Detección flexible de Booster
+            if (!held.ItemId.Contains(BoostTag)) 
+            {
+                Game1.drawObjectDialogue(Mod.Helper.Translation.Get("machine.invalid_input"));
+                Mod.Monitor.Log($"[ELE Debug] Invalid input. Item '{held.ItemId}' does not contain '{BoostTag}'", LogLevel.Warn);
+                Mod.Helper.Input.Suppress(button);
+                return;
+            }
+
+            // 4. Procesar Input
+            AttemptToStart(machine, held, button);
+        }
+
+        private void AttemptToStart(StardewValley.Object machine, Item heldBooster, SButton button)
+        {
+            CalculateCosts(machine.ItemId, heldBooster.ItemId, out int bCost, out int mCost, out int lmCost);
+
+            Mod.Monitor.Log($"[ELE Debug] Costs calculated -> Booster: {bCost}, Milk: {mCost}, L.Milk: {lmCost}", LogLevel.Trace);
+
+            // Validar Stack Booster
+            if (heldBooster.Stack < bCost) 
+            {
+                ShowMissingMessage(bCost, mCost, lmCost, heldBooster.ItemId);
+                Mod.Monitor.Log($"[ELE Debug] Missing Boosters. Has {heldBooster.Stack}, Needs {bCost}", LogLevel.Info);
+                Mod.Helper.Input.Suppress(button);
+                return;
+            }
+
+            // Validar Leche (Inventario)
+            // Búsqueda flexible: que contenga el ID (para que sirva "186" y "(O)186")
+            Item milkItem = FindItemInInventory(LargeMilkId, lmCost);
             bool useLarge = (milkItem != null);
 
-            if (!useLarge) {
-                // Si mCost es el "candado" (999), no buscamos leche pequeña, fallamos directo.
-                // Si es normal, buscamos leche pequeña.
+            if (!useLarge) 
+            {
+                // Si no es Omni (que bloquea leche pequeña con costo 999), buscamos leche normal
                 if (mCost < 999) 
-                {
-                    milkItem = Game1.player.Items.FirstOrDefault(i => i?.ItemId == Milk && i.Stack >= mCost);
-                }
+                    milkItem = FindItemInInventory(MilkId, mCost);
                 
-                if (milkItem == null) {
+                if (milkItem == null) 
+                {
                     ShowMissingMessage(bCost, mCost, lmCost, heldBooster.ItemId);
+                    Mod.Monitor.Log("[ELE Debug] Missing Milk in inventory.", LogLevel.Info);
+                    Mod.Helper.Input.Suppress(button);
                     return;
                 }
             }
 
-            // CONSUMIR
-            // CORRECCIÓN: Lógica manual de reducción de item en mano
-            heldBooster.Stack -= bCost;
-            if (heldBooster.Stack <= 0)
-            {
-                Game1.player.Items[Game1.player.CurrentToolIndex] = null;
-            }
+            Mod.Monitor.Log("[ELE Debug] Requirements met. Consuming items...", LogLevel.Info);
 
-            if (useLarge) ConsumeInventoryItem(LargeMilk, lmCost);
-            else ConsumeInventoryItem(Milk, mCost);
+            // CONSUMIR
+            heldBooster.Stack -= bCost;
+            if (heldBooster.Stack <= 0) 
+                Game1.player.Items[Game1.player.CurrentToolIndex] = null;
+
+            if (useLarge) ConsumeItem(milkItem, lmCost);
+            else ConsumeItem(milkItem, mCost);
 
             // INICIAR
-            int finishTime = Utility.ModifyTime(Game1.timeOfDay, 30); // +30 mins
+            int finishTime = Utility.ModifyTime(Game1.timeOfDay, 30);
             machine.modData["ele_finish_time"] = finishTime.ToString();
             machine.modData["ele_processing_type"] = heldBooster.ItemId;
             
-            machine.showNextIndex.Value = true; // Activar animación visual (Next Frame)
-            machine.shakeTimer = 500; // Wobble!
+            machine.showNextIndex.Value = true; 
+            machine.shakeTimer = 500; 
+            
             Game1.playSound("Ship");
             Game1.drawObjectDialogue(Mod.Helper.Translation.Get("machine.started"));
+            
+            Mod.Helper.Input.Suppress(button); // Importante para no comer/usar el item sobrante
+        }
+
+        private Item FindItemInInventory(string partialId, int count)
+        {
+            // Busca cualquier item cuyo ID contenga el número (ej: "186" en "(O)186")
+            return Game1.player.Items.FirstOrDefault(i => i != null && i.ItemId.Contains(partialId) && i.Stack >= count);
+        }
+
+        private void ConsumeItem(Item item, int count)
+        {
+            if (item == null) return;
+            item.Stack -= count;
+            if (item.Stack <= 0) Game1.player.Items.Remove(item);
         }
 
         private void ShowMissingMessage(int bCost, int mCost, int lmCost, string bId)
         {
             string bName = new StardewValley.Object(bId, 1).DisplayName;
-            string msg;
-
-            // Si mCost es el "candado" (999), mostramos el mensaje exclusivo para Omni/Large
-            if (mCost >= 999)
-            {
-                msg = Mod.Helper.Translation.Get("machine.missing_resources_omni", new { 
-                    bCount = bCost, 
-                    bName = bName, 
-                    lmCount = lmCost 
-                });
-            }
-            else
-            {
-                msg = Mod.Helper.Translation.Get("machine.missing_resources", new { 
-                    bCount = bCost, 
-                    bName = bName, 
-                    mCount = mCost, 
-                    lmCount = lmCost 
-                });
-            }
+            string msg = (mCost >= 999) 
+                ? Mod.Helper.Translation.Get("machine.missing_resources_omni", new { bCount = bCost, bName = bName, lmCount = lmCost })
+                : Mod.Helper.Translation.Get("machine.missing_resources", new { bCount = bCost, bName = bName, mCount = mCost, lmCount = lmCost });
             
             Game1.drawObjectDialogue(msg);
         }
 
-        private void ConsumeInventoryItem(string id, int count)
-        {
-            var item = Game1.player.Items.FirstOrDefault(i => i?.ItemId == id && i.Stack >= count);
-            if(item != null) {
-                item.Stack -= count;
-                if(item.Stack <= 0) Game1.player.Items.Remove(item);
-            }
-        }
-
         private void CalculateCosts(string machineId, string boosterId, out int bCost, out int mCost, out int lmCost)
         {
-            // Omni siempre cuesta 1 + 1 Large. mCost=999 bloquea el uso de leche pequeña.
-            if (boosterId == BoostOmni) { bCost=1; mCost=999; lmCost=1; return; }
+            if (boosterId.Contains(BoostOmni)) { bCost=1; mCost=999; lmCost=1; return; }
 
-            switch(machineId) {
-                case SpreaderMk2: bCost=7; mCost=8; lmCost=1; break;
-                case SpreaderMk3: bCost=9; mCost=9; lmCost=2; break;
-                case SpreaderOmega: bCost=14; mCost=14; lmCost=2; break;
-                default: bCost=5; mCost=4; lmCost=1; break;
-            }
+            // Detección por sub-string para ignorar prefijos de máquina
+            if (machineId.Contains(SpreaderOmega)) { bCost=14; mCost=14; lmCost=2; return; }
+            if (machineId.Contains(SpreaderMk3))   { bCost=9; mCost=9; lmCost=2; return; }
+            if (machineId.Contains(SpreaderMk2))   { bCost=7; mCost=8; lmCost=1; return; }
+            
+            bCost=5; mCost=4; lmCost=1; // Base
         }
 
         private void OnTimeChanged(object sender, TimeChangedEventArgs e)
@@ -171,7 +194,9 @@ namespace ELE.Core.Systems
             foreach(var loc in Game1.locations) {
                 if(!loc.IsFarm && !loc.Name.Contains("Greenhouse")) continue;
                 foreach(var pair in loc.objects.Pairs) {
-                    if(IsSpreader(pair.Value.ItemId)) ProcessTick(loc, pair.Key, pair.Value, e.NewTime);
+                    // Chequeo ligero en update loop
+                    if(pair.Value.ItemId.Contains(SpreaderBase)) 
+                        ProcessTick(loc, pair.Key, pair.Value, e.NewTime);
                 }
             }
         }
@@ -192,6 +217,7 @@ namespace ELE.Core.Systems
                     machine.modData.Remove("ele_processing_type");
                     machine.showNextIndex.Value = false;
                     loc.playSound("coin");
+                    Mod.Monitor.Log($"[ELE] Machine at {tile} finished processing. Radius: {radius}", LogLevel.Trace);
                 }
             }
         }
@@ -208,12 +234,10 @@ namespace ELE.Core.Systems
             }
         }
 
-        private bool IsSpreader(string id) => id.StartsWith("JavCombita.ELE_NutrientSpreader");
-        private bool IsBooster(string id) => id.StartsWith("JavCombita.ELE_Fertilizer");
         private int GetRadius(string id) {
-            if(id == SpreaderOmega) return 7;
-            if(id == SpreaderMk3) return 4;
-            if(id == SpreaderMk2) return 3;
+            if(id.Contains("Omega")) return 7;
+            if(id.Contains("Mk3")) return 4;
+            if(id.Contains("Mk2")) return 3;
             return 2;
         }
     }

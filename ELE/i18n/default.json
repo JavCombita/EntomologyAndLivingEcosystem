@@ -33,6 +33,7 @@
   "debug.invasion_force": "Forcing Monster Invasion...",
   "debug.pest_force": "Forcing Pest Attack...",
   "debug.mail_added": "Added mail: {{val1}}",
+  "debug.mail_triggered": "Mailbox update triggered.",
   "debug.mail_exists": "Mail already in mailbox: {{val1}}",
   "debug.recipes_unlocked": "Unlocked {{val1}} ELE recipes!",
   "debug.recipes_known": "All ELE recipes were already known.",
@@ -40,5 +41,15 @@
   "debug.recipe_already_known": "Already known: {{val1}}",
   "debug.items_added": "Attempted to add {{val1}} of {{val2}} items to inventory.",
   "debug.item_error": "Could not create item: {{val1}}",
-  "debug.invalid_amount": "Invalid amount. Usage: ele_add_items <n>. Defaulting to 1."
+  "debug.invalid_amount": "Invalid amount. Usage: ele_add_items <n>. Defaulting to 1.",
+  
+  "log.list_header": "--- ELE OBJECTS ---",
+  "log.list_entry": "ID: {{id}} | Name: {{name}}",
+  "log.tile_report": "Tile {{tile}}: {{msg}}",
+  "log.soil_analysis_daily": "Daily soil analysis completed.",
+  "log.invasion_started": "[ELE] Invasion Started! Difficulty: {{diff}}. Spawning {{count}} monsters.",
+  "log.mail_delivery": "[ELE Mail] Delivering: {{id}}. Reason: {{reason}}",
+  "log.mail_forced": "[Debug] Forced delivery: {{id}}",
+  "log.mail_redelivery": "[Debug] Re-delivery (Already known): {{id}}",
+  "log.mail_all_present": "[Debug] All mails are already in the mailbox."
 }

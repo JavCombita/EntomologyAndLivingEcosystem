@@ -30,12 +30,8 @@ namespace ELE.Core.Systems
             this.Monitor = mod.Monitor;
         }
 
-        /// <summary>
-        /// Maneja clics en objetos del ecosistema (Shelter, Suelo para Boosters)
-        /// </summary>
         public void HandleInteraction(ButtonPressedEventArgs e)
         {
-            // Solo actuar en interacción principal (Botón derecho / Toque / Acción)
             if (!e.Button.IsActionButton() && e.Button != SButton.MouseLeft) return;
             
             Vector2 tile = e.Cursor.Tile;
@@ -49,8 +45,6 @@ namespace ELE.Core.Systems
                     int.TryParse(sCount, out count);
                 
                 Game1.drawObjectDialogue(this.Mod.Helper.Translation.Get("message.shelter_count", new { count = count }));
-                
-                // Prevenir menú por defecto
                 Mod.Helper.Input.Suppress(e.Button);
                 return;
             }
@@ -59,13 +53,10 @@ namespace ELE.Core.Systems
             Item held = Game1.player.CurrentItem;
             if (held != null && held.ItemId.StartsWith("JavCombita.ELE_Fertilizer"))
             {
-                // Verificar si clicamos tierra arada
                 if (loc.terrainFeatures.TryGetValue(tile, out TerrainFeature tf) && tf is HoeDirt)
                 {
-                    // Intentar aplicar
                     if (TryApplyBoosterManual(loc, tile, held.ItemId)) 
                     {
-                        // Reducir stack manualmente (Fix para 1.6)
                         held.Stack--;
                         if (held.Stack <= 0) 
                             Game1.player.Items[Game1.player.CurrentToolIndex] = null;
@@ -79,7 +70,6 @@ namespace ELE.Core.Systems
 
         private bool TryApplyBoosterManual(GameLocation loc, Vector2 tile, string id)
         {
-            // Verificación previa para no gastar item si falla la regla
             bool isBooster = id.StartsWith("JavCombita.ELE_Fertilizer");
             string boosterKey = $"{BoosterAppliedKey}/{tile.X},{tile.Y}";
             
@@ -90,38 +80,31 @@ namespace ELE.Core.Systems
 
                 if (hasApplied)
                 {
-                     // Regla: Solo Omni reemplaza a otros. Otros no reemplazan nada.
                      if (isOmni && !appliedType.Contains("Omni")) 
                      { 
-                        // Permitir reemplazo (Upgrade a Omni)
+                        // Permitir upgrade
                      }
                      else 
                      {
-                        return false; // Bloqueado
+                        return false; 
                      }
                 }
             }
 
-            // Aplicar
             RestoreNutrients(loc, tile, id);
             return true;
         }
 
-        /// <summary>
-        /// Aplica los valores nutricionales al suelo.
-        /// </summary>
         public void RestoreNutrients(GameLocation location, Vector2 tile, string fertilizerId)
         {
             bool isBooster = fertilizerId.StartsWith("JavCombita.ELE_Fertilizer");
             string boosterKey = $"{BoosterAppliedKey}/{tile.X},{tile.Y}";
             
-            // Marcar suelo si es booster
             if (isBooster)
             {
                 location.modData[boosterKey] = fertilizerId;
             }
 
-            // Aplicar data matemática
             SoilData data = GetSoilDataAt(location, tile);
             
             // Vanilla IDs
@@ -139,21 +122,17 @@ namespace ELE.Core.Systems
                 data.Potassium = 100f; 
             }
             
-            // Clamp (Max 100)
             data.Nitrogen = Math.Min(data.Nitrogen, 100f); 
             data.Phosphorus = Math.Min(data.Phosphorus, 100f); 
             data.Potassium = Math.Min(data.Potassium, 100f);
 
             SaveSoilDataAt(location, tile, data);
             
-            // Efecto visual solo si es booster (para no duplicar el de vanilla)
             if (isBooster)
             {
                 Game1.createRadialDebris(location, 12, (int)tile.X, (int)tile.Y, 6, false);
             }
         }
-
-        // --- LÓGICA DE PLAGAS Y SHELTER ---
 
         public void CalculateDailyNutrients() 
         {
@@ -168,21 +147,19 @@ namespace ELE.Core.Systems
                         ProcessCropNutrients(location, pair.Key, dirt);
                 }
             }
-            this.Monitor.Log("Daily soil analysis completed.", LogLevel.Trace);
+            this.Monitor.Log(this.Mod.Helper.Translation.Get("log.soil_analysis_daily"), LogLevel.Trace);
         }
 
         public void ForcePestAttack() 
         {
-            Monitor.Log("Forcing Pest Attack...", LogLevel.Alert);
+            Monitor.Log(this.Mod.Helper.Translation.Get("debug.pest_force"), LogLevel.Alert);
             GameLocation loc = Game1.currentLocation;
             Vector2 playerTile = Game1.player.Tile;
             
-            // Buscar cultivos cercanos
             foreach (var pair in loc.terrainFeatures.Pairs) 
             {
                 if (pair.Value is HoeDirt dirt && dirt.crop != null && Vector2.Distance(pair.Key, playerTile) < 5) 
                 {
-                    // Forzar ataque
                     TrySpawnPests(loc, pair.Key, dirt, true); 
                 }
             }
@@ -193,7 +170,6 @@ namespace ELE.Core.Systems
             if (!this.Mod.Config.EnableNutrientCycle) return;
             SoilData data = GetSoilDataAt(location, tile);
             
-            // Consumo simple
             float drain = 2.0f * this.Mod.Config.NutrientDepletionMultiplier;
             data.Nitrogen = Math.Max(0, data.Nitrogen - drain);
             data.Phosphorus = Math.Max(0, data.Phosphorus - drain);
@@ -201,21 +177,17 @@ namespace ELE.Core.Systems
             
             SaveSoilDataAt(location, tile, data);
 
-            // Reset Flag si el cultivo murió o se recogió
             if (dirt.crop == null) 
                 location.modData.Remove($"{BoosterAppliedKey}/{tile.X},{tile.Y}");
 
-            // Chequeo de Plagas (Si K es bajo)
             if (data.Potassium < 50) 
                 TrySpawnPests(location, tile, dirt, false);
         }
 
         private void TrySpawnPests(GameLocation location, Vector2 tile, HoeDirt dirt, bool forced)
         {
-            // 1. Verificar Shelter (Defensa)
             if (InterceptByShelter(location, tile)) return;
 
-            // 2. Spawn normal (5% o forzado)
             if (forced || Game1.random.NextDouble() < 0.05) 
                 SpawnPest(location, tile, dirt, forced);
         }
@@ -228,20 +200,15 @@ namespace ELE.Core.Systems
                 {
                     if (Vector2.Distance(tile, pair.Key) <= 6) 
                     {
-                        // Shelter Bloquea!
-                        
-                        // 1. Incrementar contador
                         int current = 0;
                         if(pair.Value.modData.TryGetValue(ShelterCountKey, out string c)) 
                             int.TryParse(c, out current);
                         pair.Value.modData[ShelterCountKey] = (current + 1).ToString();
 
-                        // 2. FX (Escudo Cian)
-                        // Usamos Reflection para acceder a multiplayer de forma segura en 1.6
                         var multiplayer = this.Mod.Helper.Reflection.GetField<Multiplayer>(typeof(Game1), "multiplayer").GetValue();
                         multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite(362, 30f, 1, 1, tile * 64f, false, false){ color = Color.Cyan, scale = 4f });
                         
-                        return true; // Interceptado
+                        return true; 
                     }
                 }
             }
@@ -250,11 +217,9 @@ namespace ELE.Core.Systems
 
         private void SpawnPest(GameLocation loc, Vector2 tile, HoeDirt dirt, bool forced) 
         {
-            // Visual FX
             if (ModEntry.PestTexture != null) 
                 loc.temporarySprites.Add(new VerticalPestSprite(ModEntry.PestTexture, tile * 64f));
             
-            // Daño (30% Muerte)
             if (forced || Game1.random.NextDouble() < 0.30) 
             {
                 dirt.crop = null; 
@@ -264,7 +229,6 @@ namespace ELE.Core.Systems
             }
             else
             {
-                // Drenaje masivo si sobrevive
                 SoilData data = GetSoilDataAt(loc, tile);
                 data.Nitrogen = Math.Max(0, data.Nitrogen - 20);
                 data.Phosphorus = Math.Max(0, data.Phosphorus - 20);
@@ -272,7 +236,6 @@ namespace ELE.Core.Systems
             }
         }
 
-        // Helpers de Data
         public SoilData GetSoilDataAt(GameLocation location, Vector2 tile) 
         {
             if (location.modData.TryGetValue($"{SoilDataKey}/{tile.X},{tile.Y}", out string dataStr)) 
@@ -286,7 +249,6 @@ namespace ELE.Core.Systems
         }
     }
     
-    // Clase auxiliar para la animación de plaga
     public class VerticalPestSprite : TemporaryAnimatedSprite
     {
         public VerticalPestSprite(Texture2D texture, Vector2 position) : base()

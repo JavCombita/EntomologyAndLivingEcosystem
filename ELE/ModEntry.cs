@@ -25,7 +25,7 @@ namespace ELE.Core
         public MonsterMigration Migration { get; private set; }
         public RenderingSystem Renderer { get; private set; }
         public MachineLogic Machines { get; private set; }
-        public MailSystem Mail { get; private set; } // Sistema de Correos
+        public MailSystem Mail { get; private set; }
 
         public override void Entry(IModHelper helper)
         {
@@ -64,7 +64,7 @@ namespace ELE.Core
             this.Migration = new MonsterMigration(this);
             this.Renderer = new RenderingSystem(this);
             this.Machines = new MachineLogic(this);
-            this.Mail = new MailSystem(this); // Inicialización del Sistema de Correos
+            this.Mail = new MailSystem(this);
         }
 
         private void RegisterEvents()
@@ -106,16 +106,17 @@ namespace ELE.Core
                  if (!Context.IsWorldReady) return;
                  var tile = Game1.currentCursorTile;
                  var data = this.Ecosystem.GetSoilDataAt(Game1.currentLocation, tile);
-                 string msg = Helper.Translation.Get("message.soil_analysis", new { val1 = (int)data.Nitrogen, val2 = (int)data.Phosphorus, val3 = (int)data.Potassium });
-                 Monitor.Log($"Tile {tile}: {msg}", LogLevel.Alert);
+                 string analysisMsg = Helper.Translation.Get("message.soil_analysis", new { val1 = (int)data.Nitrogen, val2 = (int)data.Phosphorus, val3 = (int)data.Potassium });
+                 
+                 Monitor.Log(Helper.Translation.Get("log.tile_report", new { tile = tile.ToString(), msg = analysisMsg }), LogLevel.Alert);
             });
 
             // COMANDOS DE DEBUG / CHEATS
             Helper.ConsoleCommands.Add("ele_trigger_mail", "Forces delivery of all ELE mails.", (cmd, args) => 
             {
                 if (!Context.IsWorldReady) return;
-                this.Mail.ForceAllMails(); // Usamos el método del sistema
-                Monitor.Log("Mailbox update triggered.", LogLevel.Alert);
+                this.Mail.ForceAllMails();
+                Monitor.Log(Helper.Translation.Get("debug.mail_triggered"), LogLevel.Alert);
             });
 
             Helper.ConsoleCommands.Add("ele_unlock_recipes", "Unlocks all ELE crafting recipes.", (cmd, args) =>
@@ -192,12 +193,12 @@ namespace ELE.Core
             Helper.ConsoleCommands.Add("ele_list_items", "Lists all items defined by ELE.", (cmd, args) => 
             {
                 if (!Context.IsWorldReady) return;
-                // Listado crudo para desarrollo, no requiere traducción
-                Monitor.Log("--- ELE OBJECTS ---", LogLevel.Info);
+                Monitor.Log(Helper.Translation.Get("log.list_header"), LogLevel.Info);
+                
                 var objData = Game1.content.Load<Dictionary<string, StardewValley.GameData.Objects.ObjectData>>("Data/Objects");
                 foreach(var kvp in objData) {
                     if (kvp.Key.StartsWith("JavCombita.ELE")) {
-                        Monitor.Log($"ID: {kvp.Key} | Name: {kvp.Value.Name}", LogLevel.Info);
+                        Monitor.Log(Helper.Translation.Get("log.list_entry", new { id = kvp.Key, name = kvp.Value.Name }), LogLevel.Info);
                     }
                 }
             });
@@ -212,6 +213,12 @@ namespace ELE.Core
                 configMenu.AddSectionTitle(ModManifest, () => Helper.Translation.Get("config.section.general"));
                 configMenu.AddBoolOption(ModManifest, () => Config.EnablePestInvasions, val => Config.EnablePestInvasions = val, () => Helper.Translation.Get("config.enableInvasions"));
                 configMenu.AddBoolOption(ModManifest, () => Config.EnableMonsterMigration, val => Config.EnableMonsterMigration = val, () => Helper.Translation.Get("config.enableMigration"));
+				configMenu.AddNumberOption(
+					ModManifest, 
+					() => Config.DaysBeforeTownInvasion, 
+					val => Config.DaysBeforeTownInvasion = val, 
+					() => Helper.Translation.Get("config.daysBeforeInvasion")
+				);
                 configMenu.AddTextOption(ModManifest, () => Config.InvasionDifficulty, val => Config.InvasionDifficulty = val, () => Helper.Translation.Get("config.invasionDifficulty"), null, new[] { "Easy", "Medium", "Hard", "VeryHard" });
                 configMenu.AddSectionTitle(ModManifest, () => Helper.Translation.Get("config.section.nutrients"));
                 configMenu.AddBoolOption(ModManifest, () => Config.EnableNutrientCycle, val => Config.EnableNutrientCycle = val, () => Helper.Translation.Get("config.enableNutrients"));
@@ -227,7 +234,6 @@ namespace ELE.Core
             {
                 this.Ecosystem.CalculateDailyNutrients();
                 this.Migration.CheckMigrationStatus();
-                // MailSystem se engancha a eventos en su constructor, no requiere llamada aquí.
             }
         }
 
