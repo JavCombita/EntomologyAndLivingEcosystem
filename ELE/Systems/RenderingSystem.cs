@@ -16,8 +16,10 @@ namespace ELE.Core.Systems
         // Texturas
         private Texture2D PixelTexture;
         
-        // IDs (Cache)
+        // IDs
         private const string AnalyzerItemId = "JavCombita.ELE_SoilAnalyzer";
+        private const string SpreaderBaseId = "JavCombita.ELE_NutrientSpreader";
+        private const string ShelterItemId = "JavCombita.ELE_LadybugShelter";
 
         public RenderingSystem(ModEntry mod)
         {
@@ -26,8 +28,6 @@ namespace ELE.Core.Systems
             // 1. Textura 1x1 para el Overlay
             this.PixelTexture = new Texture2D(Game1.graphics.GraphicsDevice, 1, 1);
             this.PixelTexture.SetData(new[] { Color.White });
-
-            // NOTA: La carga del Shelter se movió a ModEntry para el parche de Harmony.
 
             // Eventos
             mod.Helper.Events.Display.RenderedWorld += OnRenderedWorld;
@@ -38,12 +38,76 @@ namespace ELE.Core.Systems
         {
             if (!Context.IsWorldReady || Game1.currentLocation == null) return;
 
-            // OPTIMIZACIÓN: Si no tiene el analyzer, no hacemos nada en RenderedWorld
-            if (!IsPlayerHoldingAnalyzer()) return;
-
-            GameLocation location = Game1.currentLocation;
             SpriteBatch b = e.SpriteBatch;
 
+            // 1. DIBUJAR VISTA PREVIA DE RANGO (Si tiene máquina o shelter en mano)
+            DrawPlacementRadius(b);
+
+            // 2. DIBUJAR OVERLAY DE NUTRIENTES (Si tiene analizador)
+            if (IsPlayerHoldingAnalyzer())
+            {
+                DrawSoilOverlay(b);
+            }
+        }
+
+        private void DrawPlacementRadius(SpriteBatch b)
+        {
+            Item heldItem = Game1.player.CurrentItem;
+            if (heldItem == null) return;
+
+            int radius = 0;
+            bool isCircular = false;
+            Color areaColor = new Color(0, 255, 0, 100);
+            Color borderColor = new Color(0, 200, 0, 200);
+
+            // 1. Identificar si es Spreader (Cuadrado) o Shelter (Circular)
+            if (heldItem.ItemId.Contains(SpreaderBaseId))
+            {
+                radius = GetRadiusFromItem(heldItem.ItemId);
+                isCircular = false; // Lógica de MachineLogic (Bucles for anidados)
+            }
+            else if (heldItem.ItemId == ShelterItemId)
+            {
+                radius = 6; 
+                isCircular = true;  // Lógica de EcosystemManager (Vector2.Distance)
+                areaColor = new Color(0, 200, 255, 100); // Azul cian para diferenciar protección
+                borderColor = new Color(0, 150, 200, 200);
+            }
+
+            if (radius <= 0) return;
+
+            Vector2 cursorTile = Game1.currentCursorTile;
+
+            // Iteramos el área máxima posible (bounding box)
+            for (int x = -radius; x <= radius; x++)
+            {
+                for (int y = -radius; y <= radius; y++)
+                {
+                    // Si es circular, filtramos por distancia euclidiana
+                    if (isCircular)
+                    {
+                        if (Vector2.Distance(Vector2.Zero, new Vector2(x, y)) > radius)
+                            continue;
+                    }
+
+                    Vector2 targetTile = cursorTile + new Vector2(x, y);
+                    Vector2 screenPos = Game1.GlobalToLocal(Game1.viewport, targetTile * 64f);
+
+                    // Dibujar fondo
+                    b.Draw(this.PixelTexture, 
+                           new Rectangle((int)screenPos.X, (int)screenPos.Y, 64, 64), 
+                           areaColor * 0.5f);
+
+                    // Dibujar borde
+                    DrawBorder(b, screenPos, 64, 64, borderColor, 2);
+                }
+            }
+        }
+
+        private void DrawSoilOverlay(SpriteBatch b)
+        {
+            GameLocation location = Game1.currentLocation;
+            
             // PERFORMANCE: Viewport culling
             int minX = Game1.viewport.X / 64; 
             int minY = Game1.viewport.Y / 64;
@@ -56,7 +120,6 @@ namespace ELE.Core.Systems
                 {
                     Vector2 tile = new Vector2(x, y);
 
-                    // 1. DIBUJAR OVERLAY DE NUTRIENTES
                     if (location.terrainFeatures.TryGetValue(tile, out TerrainFeature tf) && tf is HoeDirt)
                     {
                         SoilData data = this.Mod.Ecosystem.GetSoilDataAt(location, tile);
@@ -66,6 +129,18 @@ namespace ELE.Core.Systems
                     }
                 }
             }
+        }
+
+        private void DrawBorder(SpriteBatch b, Vector2 pos, int width, int height, Color color, int thickness)
+        {
+            // Top
+            b.Draw(PixelTexture, new Rectangle((int)pos.X, (int)pos.Y, width, thickness), color);
+            // Bottom
+            b.Draw(PixelTexture, new Rectangle((int)pos.X, (int)pos.Y + height - thickness, width, thickness), color);
+            // Left
+            b.Draw(PixelTexture, new Rectangle((int)pos.X, (int)pos.Y, thickness, height), color);
+            // Right
+            b.Draw(PixelTexture, new Rectangle((int)pos.X + width - thickness, (int)pos.Y, thickness, height), color);
         }
 
         private void OnRenderedHud(object sender, RenderedHudEventArgs e)
@@ -106,6 +181,14 @@ namespace ELE.Core.Systems
             if (!this.Mod.Config.ShowOverlayOnHold) return false;
             return Game1.player.CurrentItem != null && 
                    Game1.player.CurrentItem.ItemId == AnalyzerItemId;
+        }
+
+        private int GetRadiusFromItem(string itemId)
+        {
+            if (itemId.Contains("Omega")) return 7;
+            if (itemId.Contains("Mk3")) return 4;
+            if (itemId.Contains("Mk2")) return 3;
+            return 2; // Base
         }
 
         private Color CalculateHealthColor(SoilData data)
