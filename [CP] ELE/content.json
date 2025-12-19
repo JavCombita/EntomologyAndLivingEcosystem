@@ -192,7 +192,7 @@
 
         // ============================================================
         // 5. CONTENIDO DE CORREOS
-        // (La entrega se hace en MailSystem.cs, aquí solo el texto)
+        // CORRECCIÓN: Comillas añadidas y sintaxis múltiple corregida.
         // ============================================================
         {
             "Action": "EditData",
@@ -204,18 +204,19 @@
                 // Clint
                 "JavCombita.ELE_ClintAnalyzerMail": "{{i18n:mail.clint_analyzer.body}}[#]{{i18n:mail.clint_analyzer.title}}",
                 
-                // Pierre (Spreaders) - Receta adjunta
-                "JavCombita.ELE_PierreSpreaderMail": "{{i18n:mail.pierre_spreader.body}}%item craftingRecipe JavCombita.ELE_NutrientSpreader %%[#]{{i18n:mail.pierre_spreader.title}}",
+                // Pierre (Spreaders) - Receta adjunta con comillas
+                "JavCombita.ELE_PierreSpreaderMail": "{{i18n:mail.pierre_spreader.body}}%item craftingRecipe \"Nutrient Spreader\"%%[#]{{i18n:mail.pierre_spreader.title}}",
                 
-                // Qi (Upgrades) - Recetas adjuntas
-                "JavCombita.ELE_QiUpgradeMail": "{{i18n:mail.qi_upgrades.body}}%item craftingRecipe JavCombita.ELE_NutrientSpreader_Mk2 %%item craftingRecipe JavCombita.ELE_NutrientSpreader_Mk3 %%item craftingRecipe JavCombita.ELE_NutrientSpreader_Omega %%[#]{{i18n:mail.qi_upgrades.title}}",
+                // Qi (Upgrades) - Recetas adjuntas separadas con %item
+                "JavCombita.ELE_QiUpgradeMail": "{{i18n:mail.qi_upgrades.body}}%item craftingRecipe \"Nutrient Spreader Mk2\"%% %item craftingRecipe \"Nutrient Spreader Mk3\"%% %item craftingRecipe \"Nutrient Spreader Omega\"%%[#]{{i18n:mail.qi_upgrades.title}}",
                 
-                // Boosters - Recetas adjuntas
-                "JavCombita.ELE_DemetriusBoosterMail": "{{i18n:mail.demetrius_n.body}}^%item craftingRecipe JavCombita.ELE_Fertilizer_N %%[#]{{i18n:mail.demetrius_n.title}}",
-                "JavCombita.ELE_EvelynBoosterMail": "{{i18n:mail.evelyn_p.body}}^%item craftingRecipe JavCombita.ELE_Fertilizer_P %%[#]{{i18n:mail.evelyn_p.title}}",
-                "JavCombita.ELE_JodiBoosterMail": "{{i18n:mail.jodi_k.body}}^%item craftingRecipe JavCombita.ELE_Fertilizer_K %%[#]{{i18n:mail.jodi_k.title}}"
+                // Boosters - Recetas adjuntas con comillas
+                "JavCombita.ELE_DemetriusBoosterMail": "{{i18n:mail.demetrius_n.body}}%item craftingRecipe \"Nitrogen Booster\"%%[#]{{i18n:mail.demetrius_n.title}}",
+                "JavCombita.ELE_EvelynBoosterMail": "{{i18n:mail.evelyn_p.body}}%item craftingRecipe \"Phosphorus Booster\"%%[#]{{i18n:mail.evelyn_p.title}}",
+                "JavCombita.ELE_JodiBoosterMail": "{{i18n:mail.jodi_k.body}}%item craftingRecipe \"Potassium Booster\"%%[#]{{i18n:mail.jodi_k.title}}"
             }
         },
+
 
         // ============================================================
         // 6. TIENDAS (Condicionales basados en correos)
