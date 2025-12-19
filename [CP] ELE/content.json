@@ -205,17 +205,17 @@
                 "JavCombita.ELE_ClintAnalyzerMail": "{{i18n:mail.clint_analyzer.body}}[#]{{i18n:mail.clint_analyzer.title}}",
                 
                 // Pierre (Spreaders)
-                "JavCombita.ELE_PierreSpreaderMail": "{{i18n:mail.pierre_spreader.body}}%item craftingRecipe Nutrient Spreader %%[#]{{i18n:mail.pierre_spreader.title}}",
+                "JavCombita.ELE_PierreSpreaderMail": "{{i18n:mail.pierre_spreader.body}}%item craftingRecipe Nutrient_Spreader%%[#]{{i18n:mail.pierre_spreader.title}}",
                 
                 // Qi (Upgrades)
-                "JavCombita.ELE_QiUpgradeMail": "{{i18n:mail.qi_upgrades.body}}%item craftingRecipe Nutrient Spreader Mk2 %%item craftingRecipe Nutrient Spreader Mk3 %%item craftingRecipe Nutrient Spreader Omega %%[#]{{i18n:mail.qi_upgrades.title}}",
+                "JavCombita.ELE_QiUpgradeMail": "{{i18n:mail.qi_upgrades.body}}%item craftingRecipe Nutrient_Spreader Mk2%%item craftingRecipe Nutrient Spreader Mk3%%item craftingRecipe Nutrient Spreader Omega%%[#]{{i18n:mail.qi_upgrades.title}}",
                 
                 // Boosters (Aquí estaba el fallo principal)
-                "JavCombita.ELE_DemetriusBoosterMail": "{{i18n:mail.demetrius_n.body}}%item craftingRecipe Nitrogen Booster %%[#]{{i18n:mail.demetrius_n.title}}",
+                "JavCombita.ELE_DemetriusBoosterMail": "{{i18n:mail.demetrius_n.body}}%item craftingRecipe Nitrogen_Booster%%[#]{{i18n:mail.demetrius_n.title}}",
                 
-                "JavCombita.ELE_EvelynBoosterMail": "{{i18n:mail.evelyn_p.body}}%item craftingRecipe Phosphorus Booster %%[#]{{i18n:mail.evelyn_p.title}}",
+                "JavCombita.ELE_EvelynBoosterMail": "{{i18n:mail.evelyn_p.body}}%item craftingRecipe Phosphorus_Booster%%[#]{{i18n:mail.evelyn_p.title}}",
                 
-                "JavCombita.ELE_JodiBoosterMail": "{{i18n:mail.jodi_k.body}}%item craftingRecipe Potassium Booster %%[#]{{i18n:mail.jodi_k.title}}"
+                "JavCombita.ELE_JodiBoosterMail": "{{i18n:mail.jodi_k.body}}%item craftingRecipe Potassium_Booster%%[#]{{i18n:mail.jodi_k.title}}"
             }
         },
 
