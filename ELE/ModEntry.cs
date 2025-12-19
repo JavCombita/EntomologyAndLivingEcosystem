@@ -20,10 +20,12 @@ namespace ELE.Core
 
         public ModConfig Config { get; private set; }
         
+        // Sistemas
         public EcosystemManager Ecosystem { get; private set; }
         public MonsterMigration Migration { get; private set; }
         public RenderingSystem Renderer { get; private set; }
         public MachineLogic Machines { get; private set; }
+        public MailSystem Mail { get; private set; } // Sistema de Correos
 
         public override void Entry(IModHelper helper)
         {
@@ -62,6 +64,7 @@ namespace ELE.Core
             this.Migration = new MonsterMigration(this);
             this.Renderer = new RenderingSystem(this);
             this.Machines = new MachineLogic(this);
+            this.Mail = new MailSystem(this); // Inicialización del Sistema de Correos
         }
 
         private void RegisterEvents()
@@ -76,7 +79,7 @@ namespace ELE.Core
         {
             if (!Context.IsWorldReady) return;
 
-            // Delegar la interacción a los sistemas especializados
+            // Delegamos la interacción a los sistemas
             this.Ecosystem.HandleInteraction(e);
             this.Machines.HandleInteraction(e);
         }
@@ -111,23 +114,8 @@ namespace ELE.Core
             Helper.ConsoleCommands.Add("ele_trigger_mail", "Forces delivery of all ELE mails.", (cmd, args) => 
             {
                 if (!Context.IsWorldReady) return;
-                string[] mails = {
-                    "JavCombita.ELE_RobinShelterMail",
-                    "JavCombita.ELE_ClintAnalyzerMail",
-                    "JavCombita.ELE_PierreSpreaderMail", 
-                    "JavCombita.ELE_QiUpgradeMail",
-                    "JavCombita.ELE_DemetriusBoosterMail",
-                    "JavCombita.ELE_EvelynBoosterMail",
-                    "JavCombita.ELE_JodiBoosterMail"
-                };
-                foreach(var mail in mails) {
-                    if (!Game1.player.mailbox.Contains(mail)) {
-                        Game1.player.mailbox.Add(mail);
-                        Monitor.Log(Helper.Translation.Get("debug.mail_added", new { val1 = mail }), LogLevel.Info);
-                    } else {
-                        Monitor.Log(Helper.Translation.Get("debug.mail_exists", new { val1 = mail }), LogLevel.Info);
-                    }
-                }
+                this.Mail.ForceAllMails(); // Usamos el método del sistema
+                Monitor.Log("Mailbox update triggered.", LogLevel.Alert);
             });
 
             Helper.ConsoleCommands.Add("ele_unlock_recipes", "Unlocks all ELE crafting recipes.", (cmd, args) =>
@@ -239,6 +227,7 @@ namespace ELE.Core
             {
                 this.Ecosystem.CalculateDailyNutrients();
                 this.Migration.CheckMigrationStatus();
+                // MailSystem se engancha a eventos en su constructor, no requiere llamada aquí.
             }
         }
 

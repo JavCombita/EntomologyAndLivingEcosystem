@@ -90,13 +90,18 @@
                     "Texture": "Mods/JavCombita/ELE/Fertilizers", 
                     "SpriteIndex": 3, 
                     "ContextTags": ["item_booster_omni"] 
-                }
+                },
+                // ITEMS TÉCNICOS (Para lógica interna si fuera necesario, opcional con Full C# pero seguro dejar)
+                "JavCombita.ELE_Processed_N": { "Name": "Processed Nitrogen", "DisplayName": "Processing...", "Type": "Trash", "Category": -99, "Price": 0, "Texture": "Mods/JavCombita/ELE/Fertilizers", "SpriteIndex": 0, "ContextTags": ["ele_processed"] },
+                "JavCombita.ELE_Processed_P": { "Name": "Processed Phosphorus", "DisplayName": "Processing...", "Type": "Trash", "Category": -99, "Price": 0, "Texture": "Mods/JavCombita/ELE/Fertilizers", "SpriteIndex": 1, "ContextTags": ["ele_processed"] },
+                "JavCombita.ELE_Processed_K": { "Name": "Processed Potassium", "DisplayName": "Processing...", "Type": "Trash", "Category": -99, "Price": 0, "Texture": "Mods/JavCombita/ELE/Fertilizers", "SpriteIndex": 2, "ContextTags": ["ele_processed"] },
+                "JavCombita.ELE_Processed_Omni": { "Name": "Processed Omni", "DisplayName": "Processing...", "Type": "Trash", "Category": -99, "Price": 0, "Texture": "Mods/JavCombita/ELE/Fertilizers", "SpriteIndex": 3, "ContextTags": ["ele_processed"] }
             }
         },
 
         // ============================================================
         // 3. DEFINICIÓN DE MÁQUINAS (Data/BigCraftables)
-        // SpriteIndex apunta a 0, 2, 4, 6 (16x32 steps in sheet)
+        // Precios a 0 y tags para evitar venta.
         // ============================================================
         {
             "Action": "EditData",
@@ -157,18 +162,25 @@
             "Action": "EditData",
             "Target": "Data/CraftingRecipes",
             "Entries": {
+                // Shelter
                 "Ladybug Shelter": "388 100 709 50 335 4 334 20/Home/JavCombita.ELE_LadybugShelter/false/null",
+                
+                // Analyzer
                 "Soil Analyzer": "335 4 334 10 382 5/Home/JavCombita.ELE_SoilAnalyzer/false/null",
                 
-                // Base
+                // Spreader Base
                 "Nutrient Spreader": "336 5 335 20 768 25 388 100 709 50/Home/JavCombita.ELE_NutrientSpreader/false/null",
+
                 // Mk2: Prismatic Shard (896)
                 "Nutrient Spreader Mk2": "JavCombita.ELE_NutrientSpreader 1 337 5 896 1/Home/JavCombita.ELE_NutrientSpreader_Mk2/false/null",
+
                 // Mk3
                 "Nutrient Spreader Mk3": "JavCombita.ELE_NutrientSpreader_Mk2 1 896 1 848 20/Home/JavCombita.ELE_NutrientSpreader_Mk3/false/null",
+
                 // Omega
                 "Nutrient Spreader Omega": "JavCombita.ELE_NutrientSpreader_Mk3 1 896 1 910 5/Home/JavCombita.ELE_NutrientSpreader_Omega/false/null",
 
+                // Boosters
                 "Nitrogen Booster": "92 20/Field/JavCombita.ELE_Fertilizer_N/false/null",
                 "Phosphorus Booster": "330 2/Field/JavCombita.ELE_Fertilizer_P/false/null",
                 "Potassium Booster": "152 20/Field/JavCombita.ELE_Fertilizer_K/false/null",
@@ -179,7 +191,8 @@
         },
 
         // ============================================================
-        // 5. CORREOS Y TRIGGERS
+        // 5. CONTENIDO DE CORREOS
+        // (La entrega se hace en MailSystem.cs, aquí solo el texto)
         // ============================================================
         {
             "Action": "EditData",
@@ -194,44 +207,9 @@
                 "JavCombita.ELE_JodiBoosterMail": "{{i18n:mail.jodi_k.body}}[#]{{i18n:mail.jodi_k.title}}%item craftingRecipe Potassium Booster %%"
             }
         },
-        {
-            "Action": "EditData",
-            "Target": "Data/TriggerActions",
-            "Entries": {
-                "JavCombita.ELE_DeliverRobin": {
-                    "Trigger": "DayStarted",
-                    "Condition": "DAYS_PLAYED 2, !PLAYER_HAS_MAIL Current JavCombita.ELE_RobinShelterMail",
-                    "Actions": ["AddMail Current JavCombita.ELE_RobinShelterMail"]
-                },
-                "JavCombita.ELE_DeliverClint": {
-                    "Trigger": "DayStarted",
-                    "Condition": "DAYS_PLAYED 5, !PLAYER_HAS_MAIL Current JavCombita.ELE_ClintAnalyzerMail",
-                    "Actions": ["AddMail Current JavCombita.ELE_ClintAnalyzerMail"]
-                },
-                "JavCombita.ELE_DeliverPierre": {
-                    "Trigger": "DayStarted",
-                    "Condition": "PLAYER_SKILL Current Farming 8, RELATIONSHIP Pierre 2000, !PLAYER_HAS_MAIL Current JavCombita.ELE_PierreSpreaderMail",
-                    "Actions": ["AddMail Current JavCombita.ELE_PierreSpreaderMail"]
-                },
-                "JavCombita.ELE_DeliverQi": {
-                    "Trigger": "DayStarted",
-                    "Condition": "PLAYER_HAS_MAIL Current JavCombita.ELE_PierreSpreaderMail, !PLAYER_HAS_MAIL Current JavCombita.ELE_QiUpgradeMail",
-                    "Actions": ["AddMail Current JavCombita.ELE_QiUpgradeMail"]
-                },
-                "JavCombita.ELE_DeliverBoosters": {
-                    "Trigger": "DayStarted",
-                    "Condition": "PLAYER_HAS_MAIL Current JavCombita.ELE_ClintAnalyzerMail, !PLAYER_HAS_MAIL Current JavCombita.ELE_DemetriusBoosterMail",
-                    "Actions": [
-                        "AddMail Current JavCombita.ELE_DemetriusBoosterMail",
-                        "AddMail Current JavCombita.ELE_EvelynBoosterMail",
-                        "AddMail Current JavCombita.ELE_JodiBoosterMail"
-                    ]
-                }
-            }
-        },
 
         // ============================================================
-        // 6. TIENDAS
+        // 6. TIENDAS (Condicionales basados en correos)
         // ============================================================
         {
             "Action": "EditData",
