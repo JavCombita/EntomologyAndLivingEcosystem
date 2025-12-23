@@ -26,6 +26,7 @@ namespace ELE.Core
         public RenderingSystem Renderer { get; private set; }
         public MachineLogic Machines { get; private set; }
         public MailSystem Mail { get; private set; }
+		public InjectorSystem Injector { get; private set; }
 
         public override void Entry(IModHelper helper)
         {
@@ -65,6 +66,7 @@ namespace ELE.Core
             this.Renderer = new RenderingSystem(this);
             this.Machines = new MachineLogic(this);
             this.Mail = new MailSystem(this);
+			this.Injector = new InjectorSystem(this);
         }
 
         private void RegisterEvents()

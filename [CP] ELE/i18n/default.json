@@ -21,6 +21,15 @@
   "item.spreader_mk3.desc": "9x9 Area. Input: 9 Boosters + 9 Milk/2 L.Milk.",
   "item.spreader_omega.name": "Nutrient Spreader Omega",
   "item.spreader_omega.desc": "15x15 Area. Input: 14 Boosters + 14 Milk/2 L.Milk.",
+  
+  "item.injector.name": "Alchemical Injector",
+  "item.injector.desc": "A modified tool capable of injecting biological compounds directly into plant cells. Needs Mutagen to function.",
+
+  "item.mutagen_growth.name": "Growth Mutagen",
+  "item.mutagen_growth.desc": "A stable compound extracted from sap. Accelerates cell division safely.",
+
+  "item.mutagen_chaos.name": "Chaos Mutagen",
+  "item.mutagen_chaos.desc": "Unstable extract from insect meat. High risk, high reward. Can mutate crops into... anything.",
 
   "mail.robin_shelter.title": "Old Blueprints",
   "mail.robin_shelter.body": "Hey @,^I found these old blueprints for a 'Ladybug Shelter' in the attic. My grandfather swore by them to keep pests away naturally.^I'm selling the recipe at the shop now if you want to try it out!^   - Robin",

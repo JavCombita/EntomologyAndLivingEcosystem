@@ -29,6 +29,10 @@
   "machine.invalid_input": "Invalid Input. Please hold a Nutrient Booster.",
   "machine.missing_resources": "Insufficient Materials.\nRequires:\n- {{bCount}} x {{bName}}\n- {{mCount}} x Milk OR {{lmCount}} x Large Milk.",
   "machine.missing_resources_omni": "Insufficient Materials.\nRequires:\n- {{bCount}} x {{bName}}\n- {{lmCount}} x Large Milk (Premium fuel required).",
+  
+  "injector.no_ammo": "No compatible mutagen found in inventory.",
+  "injector.full": "The Injector chamber is full!",
+  "injector.reloaded": "Chamber loaded. {{count}} charges ready.",
 
   "debug.invasion_force": "Forcing Monster Invasion...",
   "debug.pest_force": "Forcing Pest Attack...",

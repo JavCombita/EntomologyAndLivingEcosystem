@@ -24,6 +24,21 @@
             "Target": "Mods/JavCombita/ELE/Fertilizers",
             "FromFile": "assets/fertilizers_sheet.png"
         },
+		{
+			"Action": "Load",
+			"Target": "Mods/JavCombita/ELE/Injector",
+			"FromFile": "assets/alchemical_injector.png"
+		},
+		{
+			"Action": "Load",
+			"Target": "Mods/JavCombita/ELE/MutagenGrowth",
+			"FromFile": "assets/mutagen_growth.png"
+		},
+		{
+			"Action": "Load",
+			"Target": "Mods/JavCombita/ELE/MutagenChaos",
+			"FromFile": "assets/mutagen_chaos.png"
+		},
 
         // ============================================================
         // 2. DEFINICIÓN DE ITEMS (Data/Objects)
@@ -95,7 +110,40 @@
                 "JavCombita.ELE_Processed_N": { "Name": "Processed Nitrogen", "DisplayName": "Processing...", "Type": "Trash", "Category": -99, "Price": 0, "Texture": "Mods/JavCombita/ELE/Fertilizers", "SpriteIndex": 0, "ContextTags": ["ele_processed"] },
                 "JavCombita.ELE_Processed_P": { "Name": "Processed Phosphorus", "DisplayName": "Processing...", "Type": "Trash", "Category": -99, "Price": 0, "Texture": "Mods/JavCombita/ELE/Fertilizers", "SpriteIndex": 1, "ContextTags": ["ele_processed"] },
                 "JavCombita.ELE_Processed_K": { "Name": "Processed Potassium", "DisplayName": "Processing...", "Type": "Trash", "Category": -99, "Price": 0, "Texture": "Mods/JavCombita/ELE/Fertilizers", "SpriteIndex": 2, "ContextTags": ["ele_processed"] },
-                "JavCombita.ELE_Processed_Omni": { "Name": "Processed Omni", "DisplayName": "Processing...", "Type": "Trash", "Category": -99, "Price": 0, "Texture": "Mods/JavCombita/ELE/Fertilizers", "SpriteIndex": 3, "ContextTags": ["ele_processed"] }
+                "JavCombita.ELE_Processed_Omni": { "Name": "Processed Omni", "DisplayName": "Processing...", "Type": "Trash", "Category": -99, "Price": 0, "Texture": "Mods/JavCombita/ELE/Fertilizers", "SpriteIndex": 3, "ContextTags": ["ele_processed"] },
+				
+				// --- ALCHEMICAL INJECTOR SYSTEM ---
+                "JavCombita.ELE_AlchemicalInjector": {
+                    "Name": "Alchemical Injector",
+                    "DisplayName": "{{i18n:item.injector.name}}",
+                    "Description": "{{i18n:item.injector.desc}}",
+                    "Type": "Basic",
+                    "Category": -99,
+                    "Price": 5000,
+                    "Texture": "Mods/JavCombita/ELE/Injector",
+                    "SpriteIndex": 0,
+                    "ContextTags": ["not_giftable", "not_placeable", "not_edible"]
+                },
+                "JavCombita.ELE_Mutagen_Growth": {
+                    "Name": "Growth Mutagen",
+                    "DisplayName": "{{i18n:item.mutagen_growth.name}}",
+                    "Description": "{{i18n:item.mutagen_growth.desc}}",
+                    "Type": "Basic",
+                    "Category": -81, 
+                    "Price": 200,
+                    "Texture": "Mods/JavCombita/ELE/MutagenGrowth",
+                    "SpriteIndex": 0
+                },
+                "JavCombita.ELE_Mutagen_Chaos": {
+                    "Name": "Chaos Mutagen",
+                    "DisplayName": "{{i18n:item.mutagen_chaos.name}}",
+                    "Description": "{{i18n:item.mutagen_chaos.desc}}",
+                    "Type": "Basic",
+                    "Category": -81,
+                    "Price": 1000,
+                    "Texture": "Mods/JavCombita/ELE/MutagenChaos",
+                    "SpriteIndex": 0
+                }
             }
         },
 
@@ -186,7 +234,16 @@
                 "Potassium_Booster": "390 15 382 5 330 5 388 10/Field/JavCombita.ELE_Fertilizer_K/false/null",
                 
                 // Omni Mix:
-                "Omni_Nutrient_Mix": "74 1 JavCombita.ELE_Fertilizer_N 15 JavCombita.ELE_Fertilizer_P 15 JavCombita.ELE_Fertilizer_K 15/Field/JavCombita.ELE_Fertilizer_Omni/false/Farming 7"
+                "Omni_Nutrient_Mix": "74 1 JavCombita.ELE_Fertilizer_N 15 JavCombita.ELE_Fertilizer_P 15 JavCombita.ELE_Fertilizer_K 15/Field/JavCombita.ELE_Fertilizer_Omni/false/Farming 7",
+				
+				// Inyector: 2 Iridio, 1 Batería, 5 Hierro (Desbloqueo por defecto por ahora)
+                "JavCombita.ELE_AlchemicalInjector": "337 2 787 1 335 5/Home/JavCombita.ELE_AlchemicalInjector/true/null",
+                
+                // Mutágeno Crecimiento: 10 Savia, 5 Fibra
+                "JavCombita.ELE_Mutagen_Growth": "92 10 771 5/Home/JavCombita.ELE_Mutagen_Growth/false/null",
+                
+                // Mutágeno Caos: 5 Carne Insecto, 1 Esencia Solar
+                "JavCombita.ELE_Mutagen_Chaos": "684 5 768 1/Home/JavCombita.ELE_Mutagen_Chaos/false/null"
             }
         },
 
