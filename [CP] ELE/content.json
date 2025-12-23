@@ -41,7 +41,7 @@
 		},
 		{
             "Action": "Load",
-            "Target": "Characters/Monsters/JavCombita.ELE_MelonCrab",
+            "Target": "Mods/JavCombita/ELE/MelonCrab",
             "FromFile": "assets/melon_crab_sheet.png" 
         },
 
@@ -118,7 +118,7 @@
                 "JavCombita.ELE_Processed_Omni": { "Name": "Processed Omni", "DisplayName": "Processing...", "Type": "Trash", "Category": -99, "Price": 0, "Texture": "Mods/JavCombita/ELE/Fertilizers", "SpriteIndex": 3, "ContextTags": ["ele_processed"] },
 				
 				// --- ALCHEMICAL INJECTOR SYSTEM ---
-                "JavCombita.ELE_Alchemical_Injector": {
+                "JavCombita.ELE_AlchemicalInjector": {
                     "Name": "Alchemical Injector",
                     "DisplayName": "{{i18n:item.injector.name}}",
                     "Description": "{{i18n:item.injector.desc}}",
@@ -242,7 +242,7 @@
                 "Omni_Nutrient_Mix": "74 1 JavCombita.ELE_Fertilizer_N 15 JavCombita.ELE_Fertilizer_P 15 JavCombita.ELE_Fertilizer_K 15/Field/JavCombita.ELE_Fertilizer_Omni/false/Farming 7",
 				
 				// Inyector: 2 Iridio, 1 Batería, 10 Hierro (Desbloqueo por defecto por ahora)
-                "Alchemical_Injector": "337 2 787 1 335 10/Home/JavCombita.ELE_Alchemical_Injector/true/null",
+                "Alchemical_Injector": "337 2 787 1 335 10/Home/JavCombita.ELE_AlchemicalInjector/true/null",
                 
                 // Mutágeno Crecimiento: 5 Nitrogen Booster, 50 Savia, 10 Fibra, 10 Esencia Solar
                 "Mutagen_Growth": "JavCombita.ELE_Fertilizer_N 5 92 50 771 10 768 10/Home/JavCombita.ELE_Mutagen_Growth/false/null",
@@ -273,7 +273,7 @@
                 "JavCombita.ELE_QiUpgradeMail": "{{i18n:mail.qi_upgrades.body}}%item craftingRecipe Nutrient_Spreader_Mk2 %% %item craftingRecipe Nutrient_Spreader_Mk3 %% %item craftingRecipe Nutrient_Spreader_Omega %%[#]{{i18n:mail.qi_upgrades.title}}",
 				
 				// Carta del Mago: Da receta de Inyector Y Mutágeno de Crecimiento
-                "JavCombita.ELE_WizardInjectorMail": "{{i18n:mail.wizard_injector.body}}%item craftingRecipe Alchemical_Injector %% %item craftingRecipe Mutagen_Growth %%[#]{{i18n:mail.wizard_injector.title}}",
+                "JavCombita.ELE_WizardInjectorMail": "{{i18n:mail.wizard_injector.body}}%item craftingRecipe AlchemicalInjector %% %item craftingRecipe Mutagen_Growth %%[#]{{i18n:mail.wizard_injector.title}}",
 					
                 // Carta de Krobus: Da receta de Mutágeno de Caos
                 "JavCombita.ELE_KrobusChaosMail": "{{i18n:mail.krobus_chaos.body}}%item craftingRecipe Mutagen_Chaos %%[#]{{i18n:mail.krobus_chaos.title}}",
@@ -316,11 +316,11 @@
                     "Condition": "PLAYER_HAS_MAIL Current JavCombita.ELE_ClintAnalyzerMail"
                 }
             }
-        }
+        },
 		
 		
 		// ============================================================
-        // 9. DATA: MONSTERS (Melon Crab)
+        // 7. DATA: MONSTERS (Melon Crab)
         // ============================================================
         {
             "Action": "EditData",
@@ -328,26 +328,26 @@
             "Entries": {
                 "JavCombita.ELE_MelonCrab": {
                     "Duration": "6", // Duración de aturdimiento al golpear
-                    "DamageToFarmer": 30,
-                    "Health": 1000,
-                    "Speed": 2,
+                    "DamageToFarmer": 20,
+                    "Health": 600,
+                    "Speed": 4,
                     "IsGlider": false,
-                    "ExperienceGained": 300,
+                    "ExperienceGained": 100,
                     "ObjectsToDrop": [
                         { "ItemId": "254", "Chance": 1.0 }, // 100% Drop de Melón (254)
 						{ "ItemId": "254", "Chance": 1.0 },
-						{ "ItemId": "254", "Chance": 1.0 },
+						{ "ItemId": "475", "Chance": 0.5 },
 						{ "ItemId": "896", "Chance": 0.01 },
 						{ "ItemId": "72", "Chance": 0.1 },
 						{ "ItemId": "74", "Chance": 0.01 },
 						{ "ItemId": "JavCombita.ELE_Fertilizer_Omni", "Chance": 0.05 }
                     ],
-                    "Resilience": 2,
-                    "Jitteriness": 0.0,
-                    "MoveTowardPlayer": 6,
-                    "MissChance": 0.1,
+                    "Resilience": 4,
+                    "Jitteriness": 0.1,
+                    "MoveTowardPlayer": 8,
+                    "MissChance": 0.0,
                     "SpriteWidth": 16,
-                    "SpriteHeight": 16 // Ajusta si tu sprite es más alto
+                    "SpriteHeight": 24 // Ajusta si tu sprite es más alto
                 }
             }
         }
