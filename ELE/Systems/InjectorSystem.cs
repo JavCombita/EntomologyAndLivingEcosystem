@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -15,9 +16,9 @@ namespace ELE.Core.Systems
         
         // IDs
         private const string InjectorItemId = "JavCombita.ELE_Alchemical_Injector";
-        private const string MutagenBaseId = "JavCombita.ELE_Mutagen"; // Base para búsqueda
+        private const string MutagenBaseId = "JavCombita.ELE_Mutagen"; 
         
-        // Keys para ModData (Guardar munición dentro de la herramienta)
+        // Keys para ModData
         private const string AmmoCountKey = "ele_injector_ammo_count";
         private const string AmmoTypeKey = "ele_injector_ammo_type";
 
@@ -32,28 +33,23 @@ namespace ELE.Core.Systems
         {
             if (!Context.IsWorldReady) return;
 
-            // 1. Validar que tenemos el Inyector en la mano
             if (Game1.player.CurrentItem == null || Game1.player.CurrentItem.ItemId != InjectorItemId) return;
 
-            // 2. RECARGAR (Clic Derecho / Acción Secundaria)
             if (e.Button.IsActionButton())
             {
                 HandleReload();
-                Mod.Helper.Input.Suppress(e.Button); // Evitar comer/interactuar
+                Mod.Helper.Input.Suppress(e.Button); 
             }
-            // 3. INYECTAR (Clic Izquierdo / Uso Herramienta)
             else if (e.Button.IsUseToolButton())
             {
                 HandleInjection(e);
-                Mod.Helper.Input.Suppress(e.Button); // Evitar usar como objeto normal
+                Mod.Helper.Input.Suppress(e.Button); 
             }
         }
 
         private void HandleReload()
         {
             Item tool = Game1.player.CurrentItem;
-            
-            // Buscar munición en inventario (Cualquier item que contenga "Mutagen")
             Item ammo = Game1.player.Items.FirstOrDefault(i => i != null && i.ItemId.Contains(MutagenBaseId));
 
             if (ammo == null)
@@ -62,11 +58,10 @@ namespace ELE.Core.Systems
                 return;
             }
 
-            // Lógica de carga
             int currentLoad = 0;
             if (tool.modData.TryGetValue(AmmoCountKey, out string countStr)) int.TryParse(countStr, out currentLoad);
 
-            int spaceFree = 20 - currentLoad; // Capacidad máx 20
+            int spaceFree = 20 - currentLoad;
             if (spaceFree <= 0)
             {
                 Game1.showRedMessage(Mod.Helper.Translation.Get("injector.full"));
@@ -75,15 +70,13 @@ namespace ELE.Core.Systems
 
             int toLoad = Math.Min(spaceFree, ammo.Stack);
             
-            // Actualizar Tool
             tool.modData[AmmoCountKey] = (currentLoad + toLoad).ToString();
-            tool.modData[AmmoTypeKey] = ammo.ItemId; // Guardamos qué tipo cargó
+            tool.modData[AmmoTypeKey] = ammo.ItemId; 
 
-            // Consumir del inventario
             ammo.Stack -= toLoad;
             if (ammo.Stack <= 0) Game1.player.Items.Remove(ammo);
 
-            Game1.playSound("load_gun"); // Sonido mecánico (o 'toolSwap')
+            Game1.playSound("load_gun"); 
             Game1.showGlobalMessage(Mod.Helper.Translation.Get("injector.reloaded", new { count = toLoad }));
         }
 
@@ -91,78 +84,139 @@ namespace ELE.Core.Systems
         {
             Item tool = Game1.player.CurrentItem;
 
-            // 1. Verificar Munición
             if (!tool.modData.TryGetValue(AmmoCountKey, out string cStr) || int.Parse(cStr) <= 0)
             {
-                Game1.playSound("click"); // Clic seco (sin munición)
+                Game1.playSound("click"); 
                 return;
             }
 
-            // 2. Verificar Objetivo (Cultivo)
             Vector2 tile = e.Cursor.Tile;
             GameLocation loc = Game1.currentLocation;
             
             if (loc.terrainFeatures.TryGetValue(tile, out TerrainFeature tf) && tf is HoeDirt dirt && dirt.crop != null)
             {
-                // EJECUTAR MAGIA
                 ApplyMutagenEffect(loc, tile, dirt, tool.modData[AmmoTypeKey]);
                 
-                // Reducir munición
                 int newCount = int.Parse(cStr) - 1;
                 tool.modData[AmmoCountKey] = newCount.ToString();
                 
-                // Animación jugador
-                Game1.player.animateOnce(284); // Animación de usar varita/espada
+                Game1.player.animateOnce(284); 
             }
         }
 
         private void ApplyMutagenEffect(GameLocation loc, Vector2 tile, HoeDirt dirt, string mutagenId)
         {
-            Random methodRng = new Random((int)tile.X * 1000 + (int)tile.Y + (int)Game1.uniqueIDForThisGame);
+            // Usamos una semilla basada en posición y tiempo para pseudo-aleatoriedad
+            Random methodRng = new Random((int)tile.X * 1000 + (int)tile.Y + (int)Game1.uniqueIDForThisGame + (int)Game1.stats.DaysPlayed);
             
-            // Lógica según tipo de mutágeno
             if (mutagenId.Contains("Growth"))
             {
-                // Crecimiento Seguro
+                // --- GROWTH MUTAGEN (Seguro) ---
                 if (dirt.crop.currentPhase.Value < dirt.crop.phaseDays.Count - 1)
                 {
                     dirt.crop.currentPhase.Value++;
                     Game1.playSound("wand");
-                    Mod.Ecosystem.RestoreNutrients(loc, tile, "(O)JavCombita.ELE_Fertilizer_Omni"); // Bonus side effect
+                    Mod.Ecosystem.RestoreNutrients(loc, tile, "(O)JavCombita.ELE_Fertilizer_Omni"); 
                 }
             }
-            else if (mutagenId.Contains("Chaos")) // High Risk
+            else if (mutagenId.Contains("Chaos")) 
             {
+                // --- CHAOS MUTAGEN (Riesgo/Recompensa) ---
                 double roll = methodRng.NextDouble();
                 
-                if (roll < 0.30) // 30% Falla catastrófica (Monstruo)
+                if (roll < 0.30) 
                 {
-                    dirt.crop = null; // Destruir cultivo
+                    // 30% FALLA: Monstruo (Melon Crab)
+                    dirt.crop = null; 
                     Game1.playSound("shadowDie");
+                    
                     var monster = new StardewValley.Monsters.RockCrab(tile * 64f, "JavCombita.ELE_MelonCrab");
-					monster.wildernessFarmMonster = true;
-					loc.addCharacter(monster);
+                    monster.wildernessFarmMonster = true; 
+                    loc.addCharacter(monster); 
+                    
                     Game1.createRadialDebris(loc, 12, (int)tile.X, (int)tile.Y, 6, false);
                 }
-                else if (roll < 0.60) // 30% Éxito Crítico (Cultivo Gigante o Doble)
+                else if (roll < 0.60) 
                 {
-                    dirt.crop.growCompletely();
-                    Game1.playSound("reward");
-                    // Intentar forzar cultivo gigante si es posible, si no, solo crece
-                    if (dirt.crop.indexOfHarvest.Value == 190 || dirt.crop.indexOfHarvest.Value == 254 || dirt.crop.indexOfHarvest.Value == 276)
+                    // 30% CRÍTICO: Gigante Instantáneo
+                    string cropId = dirt.crop.indexOfHarvest.Value;
+                    
+                    // IDs válidos para gigantes (Cauliflower, Melon, Pumpkin, Powdermelon)
+                    // Nota: Comparamos strings. Powdermelon ID suele ser "(O)Powdermelon" o IDs numéricos nuevos en 1.6
+                    bool isGiantCapable = (cropId == "190" || cropId == "254" || cropId == "276");
+
+                    if (isGiantCapable)
                     {
-                        // Lógica compleja de gigante omitida por brevedad, simplemente crece full
+                        TryForceGiantCrop(loc, tile, cropId);
+                    }
+                    else
+                    {
+                        // Si no tiene versión gigante, simplemente crece al máximo instantáneamente
+                        dirt.crop.growCompletely();
+                        Game1.playSound("reward");
                     }
                 }
-                else // 40% Crecimiento normal + Plaga muerta
+                else 
                 {
+                    // 40% NORMAL: Crece 1 etapa
                     dirt.crop.currentPhase.Value++;
                     Game1.playSound("bubbles");
                 }
             }
         }
 
-        // Dibuja el contador de munición sobre el ítem en la barra de herramientas
+        private void TryForceGiantCrop(GameLocation loc, Vector2 centerTile, string cropId)
+        {
+            // 1. Calcular el área de 3x3 centrada en el impacto
+            // El "TopLeft" del gigante será (X-1, Y-1) respecto al centro
+            Vector2 topLeft = centerTile - new Vector2(1, 1);
+
+            // 2. Verificar límites del mapa
+            if (!loc.isValidTile(topLeft) || !loc.isValidTile(topLeft + new Vector2(2, 2))) return;
+
+            // 3. LIMPIEZA: Eliminar cultivos pequeños en el área de 3x3
+            // Esto es necesario para que el gigante no aparezca "encima" de plantas existentes
+            bool areaClear = true;
+            for (int x = 0; x < 3; x++)
+            {
+                for (int y = 0; y < 3; y++)
+                {
+                    Vector2 current = topLeft + new Vector2(x, y);
+                    if (loc.terrainFeatures.TryGetValue(current, out TerrainFeature tf))
+                    {
+                        if (tf is HoeDirt hd)
+                        {
+                            hd.crop = null; // Matamos el cultivo pequeño
+                            // Opcional: Si quieres quitar la tierra arada también, usa loc.terrainFeatures.Remove(current);
+                        }
+                        else
+                        {
+                            // Si hay un árbol o algo que no es tierra arada en el medio del 3x3, abortamos para no romper nada
+                            areaClear = false;
+                        }
+                    }
+                }
+            }
+
+            if (areaClear)
+            {
+                // 4. INVOCAR AL GIGANTE
+                // En 1.6, GiantCrop toma el ID del producto (ej: "190") y la posición TopLeft
+                loc.resourceClumps.Add(new GiantCrop(cropId, topLeft));
+                
+                Game1.playSound("stumpCrack");
+                Game1.createRadialDebris(loc, 12, (int)centerTile.X, (int)centerTile.Y, 12, false);
+            }
+            else
+            {
+                // Si el área estaba obstruida, hacemos fallback a crecimiento normal
+                if (loc.terrainFeatures.TryGetValue(centerTile, out TerrainFeature tf) && tf is HoeDirt hd && hd.crop != null)
+                {
+                    hd.crop.growCompletely();
+                }
+            }
+        }
+
         private void OnRenderedHud(object sender, RenderedHudEventArgs e)
         {
             if (Game1.player.CurrentItem == null || Game1.player.CurrentItem.ItemId != InjectorItemId) return;
@@ -170,13 +224,11 @@ namespace ELE.Core.Systems
             Item tool = Game1.player.CurrentItem;
             if (tool.modData.TryGetValue(AmmoCountKey, out string count))
             {
-                // Posición del slot seleccionado en la toolbar
                 Vector2 slotPos = new Vector2(
                     (Game1.uiViewport.Width / 2) - (6 * 64) + (Game1.player.CurrentToolIndex * 64),
                     Game1.uiViewport.Height - 64 - 24
                 );
                 
-                // Dibujar número pequeño
                 Utility.drawTinyDigits(int.Parse(count), e.SpriteBatch, slotPos + new Vector2(40, 40), 3f, 1f, Color.Yellow);
             }
         }

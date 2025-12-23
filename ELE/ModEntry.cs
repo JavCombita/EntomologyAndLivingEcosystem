@@ -88,22 +88,35 @@ namespace ELE.Core
 
         private void RegisterConsoleCommands()
         {
-            // COMANDOS DE JUEGO
-            Helper.ConsoleCommands.Add("ele_invasion", "Forces a monster invasion.", (cmd, args) => 
+            // --- FUNCIÓN AUXILIAR: Registra comando y alias apuntando a la misma lógica ---
+            void AddCmd(string name, string alias, string desc, Action<string, string[]> handler)
+            {
+                Helper.ConsoleCommands.Add(name, desc, handler);
+                Helper.ConsoleCommands.Add(alias, $"{desc} (Alias for {name})", handler);
+            }
+
+            // ==============================================================================
+            // DEFINICIÓN DE HANDLERS (Lógica encapsulada)
+            // ==============================================================================
+
+            // 1. INVASIÓN
+            Action<string, string[]> invasionHandler = (cmd, args) =>
             {
                 if (!Context.IsWorldReady) return;
                 Monitor.Log(Helper.Translation.Get("debug.invasion_force"), LogLevel.Alert);
                 this.Migration.ForceInvasion();
-            });
+            };
 
-            Helper.ConsoleCommands.Add("ele_pest", "Forces pest spawn.", (cmd, args) => 
+            // 2. PLAGA (PEST)
+            Action<string, string[]> pestHandler = (cmd, args) =>
             {
                 if (!Context.IsWorldReady) return;
                 Monitor.Log(Helper.Translation.Get("debug.pest_force"), LogLevel.Alert);
                 this.Ecosystem.ForcePestAttack();
-            });
-            
-            Helper.ConsoleCommands.Add("ele_status", "Shows nutrient levels.", (cmd, args) =>
+            };
+
+            // 3. ESTATUS / ANÁLISIS
+            Action<string, string[]> statusHandler = (cmd, args) =>
             {
                  if (!Context.IsWorldReady) return;
                  var tile = Game1.currentCursorTile;
@@ -111,17 +124,18 @@ namespace ELE.Core
                  string analysisMsg = Helper.Translation.Get("message.soil_analysis", new { val1 = (int)data.Nitrogen, val2 = (int)data.Phosphorus, val3 = (int)data.Potassium });
                  
                  Monitor.Log(Helper.Translation.Get("log.tile_report", new { tile = tile.ToString(), msg = analysisMsg }), LogLevel.Alert);
-            });
+            };
 
-            // COMANDOS DE DEBUG / CHEATS
-            Helper.ConsoleCommands.Add("ele_trigger_mail", "Forces delivery of all ELE mails.", (cmd, args) => 
+            // 4. CORREO (MAIL)
+            Action<string, string[]> mailHandler = (cmd, args) =>
             {
                 if (!Context.IsWorldReady) return;
                 this.Mail.ForceAllMails();
                 Monitor.Log(Helper.Translation.Get("debug.mail_triggered"), LogLevel.Alert);
-            });
+            };
 
-            Helper.ConsoleCommands.Add("ele_unlock_recipes", "Unlocks all ELE crafting recipes.", (cmd, args) =>
+            // 5. RECETAS
+            Action<string, string[]> recipesHandler = (cmd, args) =>
             {
                 if (!Context.IsWorldReady) return;
                 
@@ -156,9 +170,10 @@ namespace ELE.Core
                     Game1.addHUDMessage(new HUDMessage(Helper.Translation.Get("debug.recipes_unlocked", new { val1 = unlockedCount }), 2));
                 else
                     Monitor.Log(Helper.Translation.Get("debug.recipes_known"), LogLevel.Warn);
-            });
+            };
 
-            Helper.ConsoleCommands.Add("ele_add_items", "Adds ELE items. Usage: ele_add_items <n>", (cmd, args) =>
+            // 6. AGREGAR ITEMS
+            Action<string, string[]> addItemsHandler = (cmd, args) =>
             {
                 if (!Context.IsWorldReady) return;
                 
@@ -196,9 +211,10 @@ namespace ELE.Core
                     }
                 }
                 Monitor.Log(Helper.Translation.Get("debug.items_added", new { val1 = amount, val2 = addedCount }), LogLevel.Alert);
-            });
+            };
 
-            Helper.ConsoleCommands.Add("ele_list_items", "Lists all items defined by ELE.", (cmd, args) => 
+            // 7. LISTAR ITEMS
+            Action<string, string[]> listItemsHandler = (cmd, args) =>
             {
                 if (!Context.IsWorldReady) return;
                 Monitor.Log(Helper.Translation.Get("log.list_header"), LogLevel.Info);
@@ -209,7 +225,19 @@ namespace ELE.Core
                         Monitor.Log(Helper.Translation.Get("log.list_entry", new { id = kvp.Key, name = kvp.Value.Name }), LogLevel.Info);
                     }
                 }
-            });
+            };
+
+            // ==============================================================================
+            // REGISTRO DE COMANDOS Y ALIAS
+            // ==============================================================================
+
+            AddCmd("ele_invasion",       "ele_i",       "Forces a monster invasion.",      invasionHandler);
+            AddCmd("ele_pest",           "ele_p",       "Forces pest spawn.",              pestHandler);
+            AddCmd("ele_status",         "ele_s",       "Shows nutrient levels.",          statusHandler);
+            AddCmd("ele_trigger_mail",   "ele_mail",    "Forces delivery of all ELE mails.", mailHandler);
+            AddCmd("ele_unlock_recipes", "ele_recipes", "Unlocks all ELE crafting recipes.", recipesHandler);
+            AddCmd("ele_add_items",      "ele_add",     "Adds ELE items. Usage: <cmd> <n>",  addItemsHandler);
+            AddCmd("ele_list_items",     "ele_list",    "Lists all items defined by ELE.",   listItemsHandler);
         }
 
         private void OnGameLaunched(object sender, GameLaunchedEventArgs e)
