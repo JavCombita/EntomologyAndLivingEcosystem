@@ -39,6 +39,11 @@
 			"Target": "Mods/JavCombita/ELE/MutagenChaos",
 			"FromFile": "assets/mutagen_chaos.png"
 		},
+		{
+            "Action": "Load",
+            "Target": "Characters/Monsters/JavCombita.ELE_MelonCrab",
+            "FromFile": "assets/melon_crab_sheet.png" 
+        },
 
         // ============================================================
         // 2. DEFINICIÓN DE ITEMS (Data/Objects)
@@ -54,7 +59,7 @@
                     "Description": "{{i18n:item.analyzer.description}}", 
                     "Type": "Basic", 
                     "Category": -99, 
-                    "Price": 1155, 
+                    "Price": 1000, 
                     "Texture": "Mods/JavCombita/ELE/Analyzer", 
                     "SpriteIndex": 0 
                 },
@@ -89,7 +94,7 @@
                     "Description": "{{i18n:item.fert_k.desc}}", 
                     "Type": "Basic", 
                     "Category": 0, 
-                    "Price": 20, 
+                    "Price": 40, 
                     "Texture": "Mods/JavCombita/ELE/Fertilizers", 
                     "SpriteIndex": 2, 
                     "ContextTags": ["item_booster_k"] 
@@ -101,7 +106,7 @@
                     "Description": "{{i18n:item.fert_omni.desc}}", 
                     "Type": "Basic", 
                     "Category": 0, 
-                    "Price": 300, 
+                    "Price": 1200, 
                     "Texture": "Mods/JavCombita/ELE/Fertilizers", 
                     "SpriteIndex": 3, 
                     "ContextTags": ["item_booster_omni"] 
@@ -113,13 +118,13 @@
                 "JavCombita.ELE_Processed_Omni": { "Name": "Processed Omni", "DisplayName": "Processing...", "Type": "Trash", "Category": -99, "Price": 0, "Texture": "Mods/JavCombita/ELE/Fertilizers", "SpriteIndex": 3, "ContextTags": ["ele_processed"] },
 				
 				// --- ALCHEMICAL INJECTOR SYSTEM ---
-                "JavCombita.ELE_AlchemicalInjector": {
+                "JavCombita.ELE_Alchemical_Injector": {
                     "Name": "Alchemical Injector",
                     "DisplayName": "{{i18n:item.injector.name}}",
                     "Description": "{{i18n:item.injector.desc}}",
                     "Type": "Basic",
                     "Category": -99,
-                    "Price": 5000,
+                    "Price": 1000,
                     "Texture": "Mods/JavCombita/ELE/Injector",
                     "SpriteIndex": 0,
                     "ContextTags": ["not_giftable", "not_placeable", "not_edible"]
@@ -140,7 +145,7 @@
                     "Description": "{{i18n:item.mutagen_chaos.desc}}",
                     "Type": "Basic",
                     "Category": -81,
-                    "Price": 1000,
+                    "Price": 200,
                     "Texture": "Mods/JavCombita/ELE/MutagenChaos",
                     "SpriteIndex": 0
                 }
@@ -236,14 +241,14 @@
                 // Omni Mix:
                 "Omni_Nutrient_Mix": "74 1 JavCombita.ELE_Fertilizer_N 15 JavCombita.ELE_Fertilizer_P 15 JavCombita.ELE_Fertilizer_K 15/Field/JavCombita.ELE_Fertilizer_Omni/false/Farming 7",
 				
-				// Inyector: 2 Iridio, 1 Batería, 5 Hierro (Desbloqueo por defecto por ahora)
-                "JavCombita.ELE_AlchemicalInjector": "337 2 787 1 335 5/Home/JavCombita.ELE_AlchemicalInjector/true/null",
+				// Inyector: 2 Iridio, 1 Batería, 10 Hierro (Desbloqueo por defecto por ahora)
+                "Alchemical_Injector": "337 2 787 1 335 10/Home/JavCombita.ELE_Alchemical_Injector/true/null",
                 
-                // Mutágeno Crecimiento: 10 Savia, 5 Fibra
-                "JavCombita.ELE_Mutagen_Growth": "92 10 771 5/Home/JavCombita.ELE_Mutagen_Growth/false/null",
+                // Mutágeno Crecimiento: 5 Nitrogen Booster, 50 Savia, 10 Fibra, 10 Esencia Solar
+                "Mutagen_Growth": "JavCombita.ELE_Fertilizer_N 5 92 50 771 10 768 10/Home/JavCombita.ELE_Mutagen_Growth/false/null",
                 
-                // Mutágeno Caos: 5 Carne Insecto, 1 Esencia Solar
-                "JavCombita.ELE_Mutagen_Chaos": "684 5 768 1/Home/JavCombita.ELE_Mutagen_Chaos/false/null"
+                // Mutágeno Caos: 5 Phosphorus Booster, 50 Savia, 10 Carne Insecto, 10 Esencia del Vacio
+                "Mutagen_Chaos": "JavCombita.ELE_Fertilizer_P 5 92 50 684 10 769 10/Home/JavCombita.ELE_Mutagen_Chaos/false/null"
             }
         },
 
@@ -266,6 +271,12 @@
                 
                 // Qi (Upgrades) - Recetas adjuntas separadas con %item
                 "JavCombita.ELE_QiUpgradeMail": "{{i18n:mail.qi_upgrades.body}}%item craftingRecipe Nutrient_Spreader_Mk2 %% %item craftingRecipe Nutrient_Spreader_Mk3 %% %item craftingRecipe Nutrient_Spreader_Omega %%[#]{{i18n:mail.qi_upgrades.title}}",
+				
+				// Carta del Mago: Da receta de Inyector Y Mutágeno de Crecimiento
+                "JavCombita.ELE_WizardInjectorMail": "{{i18n:mail.wizard_injector.body}}%item craftingRecipe Alchemical_Injector %% %item craftingRecipe Mutagen_Growth %%[#]{{i18n:mail.wizard_injector.title}}",
+					
+                // Carta de Krobus: Da receta de Mutágeno de Caos
+                "JavCombita.ELE_KrobusChaosMail": "{{i18n:mail.krobus_chaos.body}}%item craftingRecipe Mutagen_Chaos %%[#]{{i18n:mail.krobus_chaos.title}}",
                 
                 // Boosters - Recetas adjuntas con comillas
                 "JavCombita.ELE_DemetriusBoosterMail": "{{i18n:mail.demetrius_n.body}}%item craftingRecipe Nitrogen_Booster %%[#]{{i18n:mail.demetrius_n.title}}",
@@ -303,6 +314,40 @@
                     "IsRecipe": true,
                     "Price": 500,
                     "Condition": "PLAYER_HAS_MAIL Current JavCombita.ELE_ClintAnalyzerMail"
+                }
+            }
+        }
+		
+		
+		// ============================================================
+        // 9. DATA: MONSTERS (Melon Crab)
+        // ============================================================
+        {
+            "Action": "EditData",
+            "Target": "Data/Monsters",
+            "Entries": {
+                "JavCombita.ELE_MelonCrab": {
+                    "Duration": "6", // Duración de aturdimiento al golpear
+                    "DamageToFarmer": 30,
+                    "Health": 1000,
+                    "Speed": 2,
+                    "IsGlider": false,
+                    "ExperienceGained": 300,
+                    "ObjectsToDrop": [
+                        { "ItemId": "254", "Chance": 1.0 }, // 100% Drop de Melón (254)
+						{ "ItemId": "254", "Chance": 1.0 },
+						{ "ItemId": "254", "Chance": 1.0 },
+						{ "ItemId": "896", "Chance": 0.01 },
+						{ "ItemId": "72", "Chance": 0.1 },
+						{ "ItemId": "74", "Chance": 0.01 },
+						{ "ItemId": "JavCombita.ELE_Fertilizer_Omni", "Chance": 0.05 }
+                    ],
+                    "Resilience": 2,
+                    "Jitteriness": 0.0,
+                    "MoveTowardPlayer": 6,
+                    "MissChance": 0.1,
+                    "SpriteWidth": 16,
+                    "SpriteHeight": 16 // Ajusta si tu sprite es más alto
                 }
             }
         }

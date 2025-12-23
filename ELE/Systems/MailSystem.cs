@@ -18,6 +18,8 @@ namespace ELE.Core.Systems
         public const string MailDem = "JavCombita.ELE_DemetriusBoosterMail";
         public const string MailEve = "JavCombita.ELE_EvelynBoosterMail";
         public const string MailJodi = "JavCombita.ELE_JodiBoosterMail";
+		public const string MailWizard = "JavCombita.ELE_WizardInjectorMail";
+        public const string MailKrobus = "JavCombita.ELE_KrobusChaosMail";
 
         public MailSystem(ModEntry mod)
         {
@@ -52,6 +54,16 @@ namespace ELE.Core.Systems
                 TryAddMail(MailEve, "Has Clint Mail (Response: Evelyn)");
                 TryAddMail(MailJodi, "Has Clint Mail (Response: Jodi)");
             }
+			
+			if (Game1.player.farmingLevel.Value >= 8 && GetFriendshipPoints("Wizard") >= 500)
+            {
+                TryAddMail(MailWizard, "Farming 8 + Wizard 2 Hearts");
+            }
+			
+			if (Game1.player.combatLevel.Value >= 6 && HasReceivedMail(MailWizard))
+            {
+                TryAddMail(MailKrobus, "Combat 6 + Has Wizard Mail");
+            }
         }
 
         private bool HasReceivedMail(string mailId)
@@ -81,7 +93,7 @@ namespace ELE.Core.Systems
 
         public void ForceAllMails()
         {
-            string[] allMails = { MailRobin, MailClint, MailPierre, MailQi, MailDem, MailEve, MailJodi };
+            string[] allMails = { MailRobin, MailClint, MailPierre, MailQi, MailDem, MailEve, MailJodi, MailWizard, MailKrobus };
             
             int addedCount = 0;
             foreach (var mail in allMails)

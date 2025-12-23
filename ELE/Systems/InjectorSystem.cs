@@ -14,7 +14,7 @@ namespace ELE.Core.Systems
         private readonly ModEntry Mod;
         
         // IDs
-        private const string InjectorItemId = "JavCombita.ELE_AlchemicalInjector";
+        private const string InjectorItemId = "JavCombita.ELE_Alchemical_Injector";
         private const string MutagenBaseId = "JavCombita.ELE_Mutagen"; // Base para búsqueda
         
         // Keys para ModData (Guardar munición dentro de la herramienta)
@@ -139,7 +139,9 @@ namespace ELE.Core.Systems
                 {
                     dirt.crop = null; // Destruir cultivo
                     Game1.playSound("shadowDie");
-                    loc.addCharacter(new StardewValley.Monsters.Grub(tile * 64f)); // Spawn Gusano
+                    var monster = new StardewValley.Monsters.RockCrab(tile * 64f, "JavCombita.ELE_MelonCrab");
+					monster.wildernessFarmMonster = true;
+					loc.addCharacter(monster);
                     Game1.createRadialDebris(loc, 12, (int)tile.X, (int)tile.Y, 6, false);
                 }
                 else if (roll < 0.60) // 30% Éxito Crítico (Cultivo Gigante o Doble)

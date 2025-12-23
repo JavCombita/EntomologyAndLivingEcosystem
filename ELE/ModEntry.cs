@@ -135,7 +135,10 @@ namespace ELE.Core
                     "Nitrogen_Booster",
                     "Phosphorus_Booster",
                     "Potassium_Booster",
-                    "Omni_Nutrient_Mix"
+                    "Omni_Nutrient_Mix",
+					"Alchemical_Injector",
+					"Mutagen_Growth",
+					"Mutagen_Chaos"
                 };
 
                 int unlockedCount = 0;
@@ -168,6 +171,9 @@ namespace ELE.Core
                     "(O)JavCombita.ELE_Fertilizer_P",
                     "(O)JavCombita.ELE_Fertilizer_K",
                     "(O)JavCombita.ELE_Fertilizer_Omni",
+					"(O)JavCombita.ELE_Alchemical_Injector",
+					"(O)JavCombita.ELE_Mutagen_Growth",
+					"(O)JavCombita.ELE_Mutagen_Chaos",
                     "(BC)JavCombita.ELE_LadybugShelter",
                     "(BC)JavCombita.ELE_NutrientSpreader",
                     "(BC)JavCombita.ELE_NutrientSpreader_Mk2",
