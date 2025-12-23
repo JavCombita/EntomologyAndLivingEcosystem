@@ -15,7 +15,7 @@ namespace ELE.Core.Systems
         private readonly ModEntry Mod;
         
         // IDs
-        private const string InjectorItemId = "JavCombita.ELE_Alchemical_Injector";
+        private const string InjectorItemId = "JavCombita.ELE_AlchemicalInjector";
         private const string MutagenBaseId = "JavCombita.ELE_Mutagen"; 
         
         // Keys para ModData
@@ -106,12 +106,10 @@ namespace ELE.Core.Systems
 
         private void ApplyMutagenEffect(GameLocation loc, Vector2 tile, HoeDirt dirt, string mutagenId)
         {
-            // Usamos una semilla basada en posición y tiempo para pseudo-aleatoriedad
             Random methodRng = new Random((int)tile.X * 1000 + (int)tile.Y + (int)Game1.uniqueIDForThisGame + (int)Game1.stats.DaysPlayed);
             
             if (mutagenId.Contains("Growth"))
             {
-                // --- GROWTH MUTAGEN (Seguro) ---
                 if (dirt.crop.currentPhase.Value < dirt.crop.phaseDays.Count - 1)
                 {
                     dirt.crop.currentPhase.Value++;
@@ -121,12 +119,10 @@ namespace ELE.Core.Systems
             }
             else if (mutagenId.Contains("Chaos")) 
             {
-                // --- CHAOS MUTAGEN (Riesgo/Recompensa) ---
                 double roll = methodRng.NextDouble();
                 
                 if (roll < 0.30) 
                 {
-                    // 30% FALLA: Monstruo (Melon Crab)
                     dirt.crop = null; 
                     Game1.playSound("shadowDie");
                     
@@ -138,11 +134,7 @@ namespace ELE.Core.Systems
                 }
                 else if (roll < 0.60) 
                 {
-                    // 30% CRÍTICO: Gigante Instantáneo
                     string cropId = dirt.crop.indexOfHarvest.Value;
-                    
-                    // IDs válidos para gigantes (Cauliflower, Melon, Pumpkin, Powdermelon)
-                    // Nota: Comparamos strings. Powdermelon ID suele ser "(O)Powdermelon" o IDs numéricos nuevos en 1.6
                     bool isGiantCapable = (cropId == "190" || cropId == "254" || cropId == "276");
 
                     if (isGiantCapable)
@@ -151,14 +143,12 @@ namespace ELE.Core.Systems
                     }
                     else
                     {
-                        // Si no tiene versión gigante, simplemente crece al máximo instantáneamente
                         dirt.crop.growCompletely();
                         Game1.playSound("reward");
                     }
                 }
                 else 
                 {
-                    // 40% NORMAL: Crece 1 etapa
                     dirt.crop.currentPhase.Value++;
                     Game1.playSound("bubbles");
                 }
@@ -167,15 +157,11 @@ namespace ELE.Core.Systems
 
         private void TryForceGiantCrop(GameLocation loc, Vector2 centerTile, string cropId)
         {
-            // 1. Calcular el área de 3x3 centrada en el impacto
-            // El "TopLeft" del gigante será (X-1, Y-1) respecto al centro
             Vector2 topLeft = centerTile - new Vector2(1, 1);
 
-            // 2. Verificar límites del mapa
-            if (!loc.isValidTile(topLeft) || !loc.isValidTile(topLeft + new Vector2(2, 2))) return;
+            // [FIX] Usamos isTileOnMap en lugar de isValidTile
+            if (!loc.isTileOnMap(topLeft) || !loc.isTileOnMap(topLeft + new Vector2(2, 2))) return;
 
-            // 3. LIMPIEZA: Eliminar cultivos pequeños en el área de 3x3
-            // Esto es necesario para que el gigante no aparezca "encima" de plantas existentes
             bool areaClear = true;
             for (int x = 0; x < 3; x++)
             {
@@ -186,12 +172,10 @@ namespace ELE.Core.Systems
                     {
                         if (tf is HoeDirt hd)
                         {
-                            hd.crop = null; // Matamos el cultivo pequeño
-                            // Opcional: Si quieres quitar la tierra arada también, usa loc.terrainFeatures.Remove(current);
+                            hd.crop = null; 
                         }
                         else
                         {
-                            // Si hay un árbol o algo que no es tierra arada en el medio del 3x3, abortamos para no romper nada
                             areaClear = false;
                         }
                     }
@@ -200,8 +184,6 @@ namespace ELE.Core.Systems
 
             if (areaClear)
             {
-                // 4. INVOCAR AL GIGANTE
-                // En 1.6, GiantCrop toma el ID del producto (ej: "190") y la posición TopLeft
                 loc.resourceClumps.Add(new GiantCrop(cropId, topLeft));
                 
                 Game1.playSound("stumpCrack");
@@ -209,7 +191,6 @@ namespace ELE.Core.Systems
             }
             else
             {
-                // Si el área estaba obstruida, hacemos fallback a crecimiento normal
                 if (loc.terrainFeatures.TryGetValue(centerTile, out TerrainFeature tf) && tf is HoeDirt hd && hd.crop != null)
                 {
                     hd.crop.growCompletely();
