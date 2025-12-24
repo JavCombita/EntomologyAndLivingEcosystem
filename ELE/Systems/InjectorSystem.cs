@@ -170,33 +170,63 @@ namespace ELE.Core.Systems
         {
             Vector2 topLeft = centerTile - new Vector2(1, 1);
 
-            // [FIX] Usamos isTileOnMap en lugar de isValidTile
-            if (!loc.isTileOnMap(topLeft) || !loc.isTileOnMap(topLeft + new Vector2(2, 2))) return;
-			
-			if (dirt.crop == null || dirt.crop.dead.Value) return;
-
+            // 1. VERIFICACIÓN (Sin destruir nada todavía)
+            // Primero nos aseguramos de que todo el área 3x3 sea válida.
             bool areaClear = true;
             for (int x = 0; x < 3; x++)
             {
                 for (int y = 0; y < 3; y++)
                 {
                     Vector2 current = topLeft + new Vector2(x, y);
+                    
+                    // Verificar límites del mapa
+                    if (!loc.isTileOnMap(current))
+                    {
+                        areaClear = false;
+                        break;
+                    }
+
+                    // Verificar qué hay en el tile
                     if (loc.terrainFeatures.TryGetValue(current, out TerrainFeature tf))
                     {
-                        if (tf is HoeDirt hd)
+                        if (tf is HoeDirt) 
                         {
-                            hd.crop = null; 
+                            // Es tierra, está bien (incluso si tiene cultivo, lo aplastaremos)
                         }
                         else
                         {
+                            // Es un árbol, suelo, u otra cosa que no es tierra de cultivo -> Bloqueo
                             areaClear = false;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        // No hay TerrainFeature (ej. piso de madera o vacío), podría ser un problema para el GiantCrop
+                        // Normalmente los GiantCrop necesitan estar sobre HoeDirt, pero asumiremos que el código original
+                        // solo quería limpiar el área.
+                    }
+                }
+                if (!areaClear) break;
+            }
+
+            // 2. ACCIÓN
+            if (areaClear)
+            {
+                // PASO A: Limpiar el área 3x3 (Ahora que sabemos que es seguro)
+                for (int x = 0; x < 3; x++)
+                {
+                    for (int y = 0; y < 3; y++)
+                    {
+                        Vector2 current = topLeft + new Vector2(x, y);
+                        if (loc.terrainFeatures.TryGetValue(current, out TerrainFeature tf) && tf is HoeDirt hd)
+                        {
+                            hd.crop = null; // ¡Adiós cultivo pequeño!
                         }
                     }
                 }
-            }
 
-            if (areaClear)
-            {
+                // PASO B: Crear el Gigante
                 loc.resourceClumps.Add(new GiantCrop(cropId, topLeft));
                 
                 Game1.playSound("stumpCrack");
@@ -204,6 +234,9 @@ namespace ELE.Core.Systems
             }
             else
             {
+                // FALLBACK: Si no se pudo hacer gigante, crecemos el del centro.
+                // AQUÍ ESTABA TU ERROR: Usabas 'dirt' que no existía.
+                // Solución: Buscamos la tierra en centerTile manualmente.
                 if (loc.terrainFeatures.TryGetValue(centerTile, out TerrainFeature tf) && tf is HoeDirt hd && hd.crop != null)
                 {
                     hd.crop.growCompletely();
