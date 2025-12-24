@@ -15,8 +15,8 @@ namespace ELE.Core.Systems
     {
         private readonly ModEntry Mod;
         
-        // IDs
-        private const string InjectorItemId = "JavCombita.ELE_AlchemicalInjector";
+        // IDs (IMPORTANTE: Prefijo (O) agregado para coincidir con el inventario)
+        private const string InjectorItemId = "(O)JavCombita.ELE_AlchemicalInjector";
         private const string MutagenBaseId = "JavCombita.ELE_Mutagen"; 
         
         // Keys para ModData
@@ -39,25 +39,24 @@ namespace ELE.Core.Systems
                 return; 
             }
 
-            // 2. LÓGICA DE MUNDO (Solo Disparar)
+            // 2. LÓGICA DE MUNDO
             if (!Context.IsWorldReady || !Context.IsPlayerFree) return;
 
+            // Verificar item en mano (usando Contains para ser flexible con prefijos si hiciera falta)
             if (Game1.player.CurrentItem == null || Game1.player.CurrentItem.ItemId != InjectorItemId) return;
 
             // Unificamos Left Click (PC) y Tap (Android)
             if (e.Button.IsUseToolButton() || e.Button == SButton.MouseLeft)
             {
-                // Solo intentamos disparar si hay un cultivo válido
                 if (TryGetTargetCrop(e.Cursor.Tile, out HoeDirt dirt, out Vector2 tile))
                 {
-                    // >>> CAMBIO CLAVE: Si está en rango, disparamos.
-                    // Si NO está en rango, NO hacemos nada (ni mensaje, ni suppress).
-                    // Esto permite que el juego procese el clic como "caminar" hacia el cultivo.
-                    if (IsInRange(tile))
-                    {
-                        HandleInjection(dirt, tile);
-                        Mod.Helper.Input.Suppress(e.Button); // Solo suprimimos si la acción tuvo éxito
-                    }
+                    // >>> FIX RANGO: Si está lejos, NO hacemos nada. 
+                    // El juego procesará el clic como "Moverse" por defecto.
+                    if (!IsInRange(tile)) return;
+
+                    // Si está cerca, disparamos
+                    HandleInjection(dirt, tile);
+                    Mod.Helper.Input.Suppress(e.Button);
                 }
             }
         }
@@ -68,7 +67,7 @@ namespace ELE.Core.Systems
             return Math.Abs(targetTile.X - playerTile.X) <= 1 && Math.Abs(targetTile.Y - playerTile.Y) <= 1;
         }
 
-        // >>> NUEVO: Helper robusto para encontrar items en CUALQUIER menú <<<
+        // Helper robusto para encontrar el item bajo el mouse en cualquier menú
         private Item GetHoveredItem()
         {
             if (Game1.activeClickableMenu == null) return null;
@@ -93,15 +92,17 @@ namespace ELE.Core.Systems
             if (e.Button != SButton.MouseLeft && e.Button != SButton.MouseRight) return;
 
             Item heldItem = Game1.player.CursorSlotItem;
-            // Usamos el nuevo helper robusto
-            Item hoveredItem = GetHoveredItem(); 
+            Item hoveredItem = GetHoveredItem(); // Usamos el nuevo helper
+
+            // Validamos que ambos existan antes de chequear IDs
+            if (heldItem == null || hoveredItem == null) return;
 
             // CASO: Arrastrar Mutágeno (held) sobre Inyector (hovered)
-            if (heldItem != null && heldItem.ItemId.Contains(MutagenBaseId) && 
-                hoveredItem != null && hoveredItem.ItemId == InjectorItemId)
+            // Usamos .Contains para el Mutágeno para soportar Growth/Chaos
+            if (heldItem.ItemId.Contains(MutagenBaseId) && hoveredItem.ItemId == InjectorItemId)
             {
                 PerformReloadLogic(hoveredItem, heldItem);
-                Mod.Helper.Input.Suppress(e.Button);
+                Mod.Helper.Input.Suppress(e.Button); // ESTO EVITA EL SWAP
             }
         }
 
@@ -115,7 +116,7 @@ namespace ELE.Core.Systems
 
             Item ejectedAmmo = null;
 
-            // 1. SWAP
+            // 1. SWAP (Si cambiamos de tipo)
             if (currentLoad > 0 && !string.IsNullOrEmpty(currentAmmoType) && currentAmmoType != ammoSource.ItemId)
             {
                 ejectedAmmo = ItemRegistry.Create(currentAmmoType, currentLoad);
@@ -142,17 +143,19 @@ namespace ELE.Core.Systems
             // 4. CONSUMIR FUENTE
             ammoSource.Stack -= toLoad;
 
-            // 5. MANEJAR SOBRANTES
+            // 5. MANEJAR SOBRANTES (Devolver munición vieja)
             if (ejectedAmmo != null)
             {
                 Game1.playSound("coin");
 
                 if (ammoSource.Stack <= 0)
                 {
+                     // Si la mano quedó vacía, ponemos la munición vieja en la mano (Swap perfecto)
                      Game1.player.CursorSlotItem = ejectedAmmo;
                 }
                 else
                 {
+                    // Si sobró en la mano, intentamos guardar lo viejo en el inventario
                     if (!Game1.player.addItemToInventoryBool(ejectedAmmo))
                     {
                         Game1.createItemDebris(ejectedAmmo, Game1.player.getStandingPosition(), Game1.player.FacingDirection);
@@ -160,6 +163,7 @@ namespace ELE.Core.Systems
                 }
             }
             
+            // Limpiar cursor si se acabó el stack y no hubo swap
             if (ammoSource.Stack <= 0 && ejectedAmmo == null)
             {
                 Game1.player.CursorSlotItem = null;
@@ -208,6 +212,7 @@ namespace ELE.Core.Systems
             int newCount = currentAmmo - 1;
             tool.modData[AmmoCountKey] = newCount.ToString();
             
+            // FIX ANIMACIÓN: Usando FarmerSprite.AnimationFrame
             Game1.player.FarmerSprite.animateOnce(new FarmerSprite.AnimationFrame[] {
                 new FarmerSprite.AnimationFrame(57, 100), 
                 new FarmerSprite.AnimationFrame(58, 100), 
