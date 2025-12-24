@@ -14,9 +14,8 @@ namespace ELE.Core.Systems
     {
         private readonly ModEntry Mod;
         
-        // IDs: (O) es vital para coincidir con el inventario
+        // IDs
         private const string InjectorItemId = "(O)JavCombita.ELE_AlchemicalInjector";
-        // String parcial para detectar los mutágenos
         private const string MutagenPartId = "JavCombita.ELE_Mutagen"; 
         
         // Keys para ModData
@@ -32,58 +31,50 @@ namespace ELE.Core.Systems
 
         private void OnButtonPressed(object sender, ButtonPressedEventArgs e)
         {
-            // Solo lógica de mundo
             if (!Context.IsWorldReady || !Context.IsPlayerFree) return;
-            
-            // Unificamos botón de uso (Clic / Tap)
             if (!e.Button.IsUseToolButton() && !e.Button.IsActionButton()) return;
 
             Item heldItem = Game1.player.CurrentItem;
             if (heldItem == null) return;
 
-            // --- CASO A: SOSTENIENDO EL INYECTOR (Disparar) ---
+            // CASO A: SOSTENIENDO EL INYECTOR
             if (heldItem.ItemId.Contains("JavCombita.ELE_AlchemicalInjector"))
             {
+                // Solo disparamos si el clic es EXACTAMENTE sobre un cultivo
                 if (TryGetTargetCrop(e.Cursor.Tile, out HoeDirt dirt, out Vector2 tile))
                 {
-                    // Si está en rango, disparamos.
+                    // Y además, si ese cultivo está cerca
                     if (IsInRange(tile))
                     {
                         HandleInjection(heldItem, dirt, tile);
                         Mod.Helper.Input.Suppress(e.Button);
                     }
-                    // Si NO está en rango, no hacemos nada (ni suprimimos), así el jugador camina.
                 }
+                // Si haces clic en el suelo vacío, no entra al 'if' y el juego ejecuta "Caminar" normalmente.
             }
-            // --- CASO B: SOSTENIENDO UN MUTÁGENO (Recargar) ---
+            // CASO B: SOSTENIENDO UN MUTÁGENO
             else if (heldItem.ItemId.Contains(MutagenPartId))
             {
-                // >>> FIX ANDROID: Solo recargar si tocamos al JUGADOR <<<
+                // Solo recargar si tocamos al jugador (Para no bloquear UI en Android)
                 if (IsClickingOnPlayer(e.Cursor.Tile))
                 {
                     HandleReloadFromHand(heldItem);
                     Mod.Helper.Input.Suppress(e.Button);
                 }
-                // Si tocamos cualquier otro lado (suelo, aire, UI), NO hacemos nada.
-                // Esto permite caminar, abrir inventario, etc.
             }
         }
 
-        // >>> NUEVO: Detecta si el clic/tap fue sobre el granjero <<<
         private bool IsClickingOnPlayer(Vector2 cursorTile)
         {
             Vector2 playerTile = Game1.player.Tile;
-            // Verificamos si tocamos el tile de los pies (Tile) o el tile de la cabeza (Tile.Y - 1)
-            // Esto hace que sea fácil atinarle en pantallas táctiles
             return cursorTile == playerTile || cursorTile == new Vector2(playerTile.X, playerTile.Y - 1);
         }
 
         // ============================================================================================
-        // ?? LÓGICA DE RECARGA SIN LÍMITES
+        // ?? LÓGICA DE RECARGA
         // ============================================================================================
         private void HandleReloadFromHand(Item mutagenInHand)
         {
-            // 1. Buscar el Inyector en el inventario (búsqueda flexible)
             Item injector = Game1.player.Items.FirstOrDefault(i => i != null && i.ItemId.Contains("JavCombita.ELE_AlchemicalInjector"));
 
             if (injector == null)
@@ -92,18 +83,16 @@ namespace ELE.Core.Systems
                 return;
             }
 
-            // 2. Leer estado actual
             int currentLoad = 0;
             string currentType = null;
             if (injector.modData.TryGetValue(AmmoCountKey, out string c)) int.TryParse(c, out currentLoad);
             if (injector.modData.TryGetValue(AmmoTypeKey, out string t)) currentType = t;
 
-            // 3. LÓGICA DE SWAP (Si hay munición y es DIFERENTE, la expulsamos)
+            // SWAP
             if (currentLoad > 0 && !string.IsNullOrEmpty(currentType) && currentType != mutagenInHand.ItemId)
             {
                 Item oldAmmo = ItemRegistry.Create(currentType, currentLoad);
                 
-                // Intentar devolver al inventario
                 if (Game1.player.addItemToInventoryBool(oldAmmo))
                 {
                     Game1.playSound("coin");
@@ -112,28 +101,23 @@ namespace ELE.Core.Systems
                 }
                 else
                 {
-                    // Si inventario lleno, tiramos al suelo
                     Game1.createItemDebris(oldAmmo, Game1.player.getStandingPosition(), Game1.player.FacingDirection);
                     currentLoad = 0;
                     injector.modData[AmmoCountKey] = "0";
                 }
             }
 
-            // 4. CALCULAR RECARGA (SIN LÍMITE)
+            // RECARGA (Sin límite)
             int toLoad = mutagenInHand.Stack;
-
-            // 5. APLICAR CAMBIOS
             injector.modData[AmmoCountKey] = (currentLoad + toLoad).ToString();
             injector.modData[AmmoTypeKey] = mutagenInHand.ItemId; 
 
-            // 6. CONSUMIR TODO EL STACK DE LA MANO
+            // CONSUMIR
             Game1.player.Items[Game1.player.CurrentToolIndex] = null;
 
-            // 7. FEEDBACK
-            Game1.playSound("load_gun");
+            Game1.playSound("toolSwap"); 
             Game1.showGlobalMessage(Mod.Helper.Translation.Get("injector.reloaded", new { count = toLoad }));
             
-            // Animación
             Game1.player.FarmerSprite.animateOnce(new FarmerSprite.AnimationFrame[] {
                 new FarmerSprite.AnimationFrame(57, 300),
                 new FarmerSprite.AnimationFrame(0, 100)
@@ -147,7 +131,7 @@ namespace ELE.Core.Systems
         {
             if (!tool.modData.TryGetValue(AmmoCountKey, out string cStr) || !int.TryParse(cStr, out int currentAmmo) || currentAmmo <= 0)
             {
-                Game1.playSound("click"); 
+                Game1.playSound("bigDeSelect"); 
                 Game1.showRedMessage(Mod.Helper.Translation.Get("injector.no_ammo"));
                 return;
             }
@@ -158,7 +142,6 @@ namespace ELE.Core.Systems
             int newCount = currentAmmo - 1;
             tool.modData[AmmoCountKey] = newCount.ToString();
             
-            // Animación
             Game1.player.FarmerSprite.animateOnce(new FarmerSprite.AnimationFrame[] {
                 new FarmerSprite.AnimationFrame(57, 100), 
                 new FarmerSprite.AnimationFrame(58, 100), 
@@ -186,9 +169,21 @@ namespace ELE.Core.Systems
                     loc.playSound("shadowDie");
                     Game1.createRadialDebris(loc, 12, (int)tile.X, (int)tile.Y, 6, false);
                     dirt.crop = null; 
-                    var monster = new StardewValley.Monsters.RockCrab(tile * 64f, "JavCombita.ELE_MelonCrab");
-                    monster.wildernessFarmMonster = true; 
-                    loc.addCharacter(monster); 
+                    
+                    try 
+                    {
+                        var monster = new StardewValley.Monsters.RockCrab(tile * 64f, "JavCombita.ELE_MelonCrab");
+                        monster.wildernessFarmMonster = true; 
+                        monster.DamageToFarmer = 12; 
+                        monster.Health = 150; 
+                        loc.addCharacter(monster); 
+                    }
+                    catch (Exception)
+                    {
+                        var fallbackMonster = new StardewValley.Monsters.RockCrab(tile * 64f);
+                        loc.addCharacter(fallbackMonster);
+                    }
+                    
                 } else if (roll < 0.60) {
                     string cropId = dirt.crop.indexOfHarvest.Value;
                     bool isGiantCapable = (cropId == "190" || cropId == "254" || cropId == "276");
@@ -234,25 +229,23 @@ namespace ELE.Core.Systems
             }
         }
 
+        // >>> CAMBIO PRINCIPAL: Puntería Estricta <<<
         private bool TryGetTargetCrop(Vector2 cursorTile, out HoeDirt dirt, out Vector2 tileLocation)
         {
             dirt = null;
             tileLocation = cursorTile;
             GameLocation loc = Game1.currentLocation;
 
+            // 1. SOLO verificamos el tile exacto del cursor/dedo
             if (loc.terrainFeatures.TryGetValue(cursorTile, out TerrainFeature tf) && tf is HoeDirt hd && hd.crop != null)
             {
                 dirt = hd;
                 return true;
             }
 
-            Vector2 grabTile = new Vector2((int)(Game1.player.GetToolLocation().X / 64f), (int)(Game1.player.GetToolLocation().Y / 64f));
-            if (grabTile != cursorTile && loc.terrainFeatures.TryGetValue(grabTile, out TerrainFeature tf2) && tf2 is HoeDirt hd2 && hd2.crop != null)
-            {
-                dirt = hd2;
-                tileLocation = grabTile;
-                return true;
-            }
+            // 2. ELIMINADA la lógica de "GetToolLocation" (frontal).
+            // Ahora si no le das al cultivo, retorna false.
+            
             return false;
         }
 
