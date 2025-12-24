@@ -242,7 +242,7 @@
                 "Omni_Nutrient_Mix": "74 1 JavCombita.ELE_Fertilizer_N 15 JavCombita.ELE_Fertilizer_P 15 JavCombita.ELE_Fertilizer_K 15/Field/JavCombita.ELE_Fertilizer_Omni/false/Farming 7",
 				
 				// Inyector: 2 Iridio, 1 Batería, 10 Hierro (Desbloqueo por defecto por ahora)
-                "Alchemical_Injector": "337 2 787 1 335 10/Home/JavCombita.ELE_AlchemicalInjector/true/null",
+                "Alchemical_Injector": "337 2 787 1 335 10/Home/(O)JavCombita.ELE_AlchemicalInjector/false/null",
                 
                 // Mutágeno Crecimiento: 5 Nitrogen Booster, 50 Savia, 10 Fibra, 10 Esencia Solar
                 "Mutagen_Growth": "JavCombita.ELE_Fertilizer_N 5 92 50 771 10 768 10/Home/JavCombita.ELE_Mutagen_Growth/false/null",
