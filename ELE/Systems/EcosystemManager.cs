@@ -55,17 +55,17 @@ namespace ELE.Core.Systems
             {
                 if (loc.terrainFeatures.TryGetValue(tile, out TerrainFeature tf) && tf is HoeDirt)
                 {
-                    // Validación de Rango (0-1 Tile)
+                    // >>> CAMBIO: Si NO está en rango, simplemente retornamos.
+                    // NO suprimimos el botón, permitiendo que el juego haga lo suyo (caminar, etc.)
                     if (!IsInRange(tile))
                     {
-                        Game1.showRedMessage("Out of Range");
-                        Mod.Helper.Input.Suppress(e.Button);
+                        // Opcional: Game1.showRedMessage("Out of Range"); // Si quieres feedback sutil
                         return;
                     }
 
                     if (TryApplyBoosterManual(loc, tile, held.ItemId)) 
                     {
-                        // CORRECCIÓN: Envolvemos el frame único en un array []
+                        // Animación correcta
                         Game1.player.FarmerSprite.animateOnce(new FarmerSprite.AnimationFrame[] {
                             new FarmerSprite.AnimationFrame(196, 150)
                         }); 

@@ -32,14 +32,14 @@ namespace ELE.Core.Systems
 
         private void OnButtonPressed(object sender, ButtonPressedEventArgs e)
         {
-            // 1. L¨®GICA DE INVENTARIO (Drag & Drop)
+            // 1. LÓGICA DE INVENTARIO (Drag & Drop)
             if (Game1.activeClickableMenu != null)
             {
                 HandleMenuInteraction(e);
                 return; 
             }
 
-            // 2. L¨®GICA DE MUNDO (Solo Disparar)
+            // 2. LÓGICA DE MUNDO (Solo Disparar)
             if (!Context.IsWorldReady || !Context.IsPlayerFree) return;
 
             if (Game1.player.CurrentItem == null || Game1.player.CurrentItem.ItemId != InjectorItemId) return;
@@ -47,17 +47,16 @@ namespace ELE.Core.Systems
             // Unificamos Left Click (PC) y Tap (Android)
             if (e.Button.IsUseToolButton() || e.Button == SButton.MouseLeft)
             {
-                // Solo intentamos disparar si hay un cultivo v¨¢lido
+                // Solo intentamos disparar si hay un cultivo válido
                 if (TryGetTargetCrop(e.Cursor.Tile, out HoeDirt dirt, out Vector2 tile))
                 {
+                    // >>> CAMBIO CLAVE: Si está en rango, disparamos.
+                    // Si NO está en rango, NO hacemos nada (ni mensaje, ni suppress).
+                    // Esto permite que el juego procese el clic como "caminar" hacia el cultivo.
                     if (IsInRange(tile))
                     {
                         HandleInjection(dirt, tile);
-                        Mod.Helper.Input.Suppress(e.Button);
-                    }
-                    else
-                    {
-                        Game1.showRedMessage("Out of Range"); 
+                        Mod.Helper.Input.Suppress(e.Button); // Solo suprimimos si la acción tuvo éxito
                     }
                 }
             }
@@ -69,14 +68,35 @@ namespace ELE.Core.Systems
             return Math.Abs(targetTile.X - playerTile.X) <= 1 && Math.Abs(targetTile.Y - playerTile.Y) <= 1;
         }
 
+        // >>> NUEVO: Helper robusto para encontrar items en CUALQUIER menú <<<
+        private Item GetHoveredItem()
+        {
+            if (Game1.activeClickableMenu == null) return null;
+
+            // Caso Especial: Menú Principal (Inventario con pestañas, tecla E)
+            if (Game1.activeClickableMenu is GameMenu gameMenu)
+            {
+                var pages = Mod.Helper.Reflection.GetField<List<IClickableMenu>>(gameMenu, "pages").GetValue();
+                if (pages != null && gameMenu.currentTab >= 0 && gameMenu.currentTab < pages.Count)
+                {
+                    var currentPage = pages[gameMenu.currentTab];
+                    return Mod.Helper.Reflection.GetField<Item>(currentPage, "hoveredItem", false)?.GetValue();
+                }
+            }
+            
+            // Caso Estándar: Cofres, Máquinas, Tiendas
+            return Mod.Helper.Reflection.GetField<Item>(Game1.activeClickableMenu, "hoveredItem", false)?.GetValue();
+        }
+
         private void HandleMenuInteraction(ButtonPressedEventArgs e)
         {
             if (e.Button != SButton.MouseLeft && e.Button != SButton.MouseRight) return;
 
             Item heldItem = Game1.player.CursorSlotItem;
-            Item hoveredItem = Mod.Helper.Reflection.GetField<Item>(Game1.activeClickableMenu, "hoveredItem", false)?.GetValue();
+            // Usamos el nuevo helper robusto
+            Item hoveredItem = GetHoveredItem(); 
 
-            // CASO: Arrastrar Mut¨¢geno (held) sobre Inyector (hovered)
+            // CASO: Arrastrar Mutágeno (held) sobre Inyector (hovered)
             if (heldItem != null && heldItem.ItemId.Contains(MutagenBaseId) && 
                 hoveredItem != null && hoveredItem.ItemId == InjectorItemId)
             {
@@ -95,7 +115,7 @@ namespace ELE.Core.Systems
 
             Item ejectedAmmo = null;
 
-            // 1. DETECTAR NECESIDAD DE SWAP (Cambio de Tipo)
+            // 1. SWAP
             if (currentLoad > 0 && !string.IsNullOrEmpty(currentAmmoType) && currentAmmoType != ammoSource.ItemId)
             {
                 ejectedAmmo = ItemRegistry.Create(currentAmmoType, currentLoad);
@@ -103,7 +123,7 @@ namespace ELE.Core.Systems
                 injector.modData[AmmoCountKey] = "0";
             }
 
-            // 2. CALCULAR ESPACIO
+            // 2. CHECK ESPACIO
             int maxCapacity = 20;
             int spaceFree = maxCapacity - currentLoad;
 
@@ -119,10 +139,10 @@ namespace ELE.Core.Systems
             injector.modData[AmmoCountKey] = (currentLoad + toLoad).ToString();
             injector.modData[AmmoTypeKey] = ammoSource.ItemId; 
 
-            // 4. ACTUALIZAR FUENTE
+            // 4. CONSUMIR FUENTE
             ammoSource.Stack -= toLoad;
 
-            // 5. MANEJO FINAL DEL SWAP
+            // 5. MANEJAR SOBRANTES
             if (ejectedAmmo != null)
             {
                 Game1.playSound("coin");
@@ -154,14 +174,12 @@ namespace ELE.Core.Systems
             tileLocation = cursorTile;
             GameLocation loc = Game1.currentLocation;
 
-            // 1. Tile directo
             if (loc.terrainFeatures.TryGetValue(cursorTile, out TerrainFeature tf) && tf is HoeDirt hd && hd.crop != null)
             {
                 dirt = hd;
                 return true;
             }
 
-            // 2. Tile frontal (Android/Controller)
             Vector2 grabTile = new Vector2((int)(Game1.player.GetToolLocation().X / 64f), (int)(Game1.player.GetToolLocation().Y / 64f));
             if (grabTile != cursorTile && loc.terrainFeatures.TryGetValue(grabTile, out TerrainFeature tf2) && tf2 is HoeDirt hd2 && hd2.crop != null)
             {
@@ -190,7 +208,6 @@ namespace ELE.Core.Systems
             int newCount = currentAmmo - 1;
             tool.modData[AmmoCountKey] = newCount.ToString();
             
-            // CORRECCI¨®N ANIMACI¨®N: Usar FarmerSprite.AnimationFrame expl¨ªcitamente
             Game1.player.FarmerSprite.animateOnce(new FarmerSprite.AnimationFrame[] {
                 new FarmerSprite.AnimationFrame(57, 100), 
                 new FarmerSprite.AnimationFrame(58, 100), 
