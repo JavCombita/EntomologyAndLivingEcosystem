@@ -213,12 +213,12 @@ namespace ELE.Core.Systems
             int newCount = currentAmmo - 1;
             tool.modData[AmmoCountKey] = newCount.ToString();
             
-            // Animación segura
-            Game1.player.FarmerSprite.animateOnce(new FarmerSprite.DataFrame[] {
-                new FarmerSprite.DataFrame(57, 100), 
-                new FarmerSprite.DataFrame(58, 100), 
-                new FarmerSprite.DataFrame(0, 100)
-            });
+            // Animacion segura
+            Game1.player.FarmerSprite.animateOnce(new AnimationFrame[] {
+				new AnimationFrame(57, 100), 
+				new AnimationFrame(58, 100), 
+				new AnimationFrame(0, 100)
+			});
         }
 
         private void ApplyMutagenEffect(GameLocation loc, Vector2 tile, HoeDirt dirt, string mutagenId)

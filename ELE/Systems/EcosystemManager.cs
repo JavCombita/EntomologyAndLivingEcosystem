@@ -37,7 +37,7 @@ namespace ELE.Core.Systems
             Vector2 tile = e.Cursor.Tile;
             GameLocation loc = Game1.currentLocation;
 
-            // 1. Shelter Counter Check (Clic en Shelter)
+            // 1. Shelter Counter Check (Clic en Shelter) - TU LÓGICA ORIGINAL
             if (loc.objects.TryGetValue(tile, out StardewValley.Object obj) && obj.ItemId == LadybugShelterId)
             {
                 int count = 0;
@@ -65,12 +65,14 @@ namespace ELE.Core.Systems
 
                     if (TryApplyBoosterManual(loc, tile, held.ItemId)) 
                     {
-                        // >>> NUEVO: Animación y Partículas <<<
-                        Game1.player.animateOnce(new FarmerSprite.DataFrame(196, 150)); // Granjero se agacha
-                        Game1.createRadialDebris(loc, 14, (int)tile.X, (int)tile.Y, 4, false); // Partículas de tierra
+                        // >>> NUEVO: Animación (Fix AnimationFrame) y Partículas <<<
+                        // Usamos 'AnimationFrame' directamente, no 'FarmerSprite.DataFrame'
+                        Game1.player.FarmerSprite.animateOnce(new AnimationFrame(196, 150)); 
+                        
+                        Game1.createRadialDebris(loc, 14, (int)tile.X, (int)tile.Y, 4, false); // Partículas marrones
                         Game1.playSound("dirtyHit");
 
-                        // Consumo del item
+                        // Consumo del Stack
                         held.Stack--;
                         if (held.Stack <= 0) 
                             Game1.player.Items[Game1.player.CurrentToolIndex] = null;
@@ -81,7 +83,7 @@ namespace ELE.Core.Systems
             }
         }
 
-        // Helper para verificar distancia (0 o 1 tile)
+        // >>> NUEVO: Helper para Rango (Requerido para la validación arriba) <<<
         private bool IsInRange(Vector2 targetTile)
         {
             Vector2 playerTile = Game1.player.Tile;
@@ -100,7 +102,6 @@ namespace ELE.Core.Systems
 
                 if (hasApplied)
                 {
-                     // Permitir sobreescribir si estamos aplicando Omni sobre uno normal
                      if (isOmni && !appliedType.Contains("Omni")) 
                      { 
                         // Permitir upgrade
@@ -151,7 +152,7 @@ namespace ELE.Core.Systems
             
             if (isBooster)
             {
-                // Efecto extra para visualización automática
+                // Efecto extra visual (mantenemos tu lógica)
                 Game1.createRadialDebris(location, 12, (int)tile.X, (int)tile.Y, 6, false);
             }
         }
