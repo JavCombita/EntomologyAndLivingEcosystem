@@ -37,7 +37,7 @@ namespace ELE.Core.Systems
             Vector2 tile = e.Cursor.Tile;
             GameLocation loc = Game1.currentLocation;
 
-            // 1. Shelter Counter Check (Clic en Shelter) - TU LÓGICA ORIGINAL
+            // 1. Shelter Counter Check
             if (loc.objects.TryGetValue(tile, out StardewValley.Object obj) && obj.ItemId == LadybugShelterId)
             {
                 int count = 0;
@@ -49,13 +49,13 @@ namespace ELE.Core.Systems
                 return;
             }
 
-            // 2. Manual Booster Application (Clic en suelo con Booster en mano)
+            // 2. Manual Booster Application
             Item held = Game1.player.CurrentItem;
             if (held != null && held.ItemId.StartsWith("JavCombita.ELE_Fertilizer"))
             {
                 if (loc.terrainFeatures.TryGetValue(tile, out TerrainFeature tf) && tf is HoeDirt)
                 {
-                    // >>> NUEVO: Validación de Rango (0-1 Tile) <<<
+                    // Validación de Rango (0-1 Tile)
                     if (!IsInRange(tile))
                     {
                         Game1.showRedMessage("Out of Range");
@@ -65,14 +65,13 @@ namespace ELE.Core.Systems
 
                     if (TryApplyBoosterManual(loc, tile, held.ItemId)) 
                     {
-                        // >>> NUEVO: Animación (Fix AnimationFrame) y Partículas <<<
-                        // Usamos 'AnimationFrame' directamente, no 'FarmerSprite.DataFrame'
-                        Game1.player.FarmerSprite.animateOnce(new AnimationFrame(196, 150)); 
+                        // CORRECCIÓN ANIMACIÓN: Usar FarmerSprite.AnimationFrame explícitamente
+                        Game1.player.FarmerSprite.animateOnce(new FarmerSprite.AnimationFrame(196, 150)); 
                         
-                        Game1.createRadialDebris(loc, 14, (int)tile.X, (int)tile.Y, 4, false); // Partículas marrones
+                        Game1.createRadialDebris(loc, 14, (int)tile.X, (int)tile.Y, 4, false); 
                         Game1.playSound("dirtyHit");
 
-                        // Consumo del Stack
+                        // Consumo
                         held.Stack--;
                         if (held.Stack <= 0) 
                             Game1.player.Items[Game1.player.CurrentToolIndex] = null;
@@ -83,7 +82,6 @@ namespace ELE.Core.Systems
             }
         }
 
-        // >>> NUEVO: Helper para Rango (Requerido para la validación arriba) <<<
         private bool IsInRange(Vector2 targetTile)
         {
             Vector2 playerTile = Game1.player.Tile;
@@ -129,11 +127,9 @@ namespace ELE.Core.Systems
 
             SoilData data = GetSoilDataAt(location, tile);
             
-            // Vanilla IDs
             if (fertilizerId == "(O)368" || fertilizerId == "368") data.Nitrogen += 30f;
             else if (fertilizerId == "(O)369" || fertilizerId == "369") { data.Nitrogen += 60f; data.Phosphorus += 30f; }
             
-            // ELE Boosters
             else if (fertilizerId.Contains("Fertilizer_N")) data.Nitrogen += 80f;
             else if (fertilizerId.Contains("Fertilizer_P")) data.Phosphorus += 80f;
             else if (fertilizerId.Contains("Fertilizer_K")) data.Potassium += 80f;
@@ -152,7 +148,6 @@ namespace ELE.Core.Systems
             
             if (isBooster)
             {
-                // Efecto extra visual (mantenemos tu lógica)
                 Game1.createRadialDebris(location, 12, (int)tile.X, (int)tile.Y, 6, false);
             }
         }

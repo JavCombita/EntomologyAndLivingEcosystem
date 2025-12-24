@@ -32,14 +32,14 @@ namespace ELE.Core.Systems
 
         private void OnButtonPressed(object sender, ButtonPressedEventArgs e)
         {
-            // 1. L脫GICA DE INVENTARIO (Drag & Drop)
+            // 1. LóGICA DE INVENTARIO (Drag & Drop)
             if (Game1.activeClickableMenu != null)
             {
                 HandleMenuInteraction(e);
                 return; 
             }
 
-            // 2. L脫GICA DE MUNDO (Solo Disparar)
+            // 2. LóGICA DE MUNDO (Solo Disparar)
             if (!Context.IsWorldReady || !Context.IsPlayerFree) return;
 
             if (Game1.player.CurrentItem == null || Game1.player.CurrentItem.ItemId != InjectorItemId) return;
@@ -47,10 +47,9 @@ namespace ELE.Core.Systems
             // Unificamos Left Click (PC) y Tap (Android)
             if (e.Button.IsUseToolButton() || e.Button == SButton.MouseLeft)
             {
-                // Solo intentamos disparar si hay un cultivo v谩lido
+                // Solo intentamos disparar si hay un cultivo válido
                 if (TryGetTargetCrop(e.Cursor.Tile, out HoeDirt dirt, out Vector2 tile))
                 {
-                    // NUEVO: Verificaci贸n de Rango (0-1 Tile)
                     if (IsInRange(tile))
                     {
                         HandleInjection(dirt, tile);
@@ -58,23 +57,18 @@ namespace ELE.Core.Systems
                     }
                     else
                     {
-                        Game1.showRedMessage("Out of Range"); // Feedback visual
+                        Game1.showRedMessage("Out of Range"); 
                     }
                 }
             }
         }
 
-        // Helper para verificar distancia (0 o 1 tile)
         private bool IsInRange(Vector2 targetTile)
         {
             Vector2 playerTile = Game1.player.Tile;
-            // Distancia absoluta en X y Y debe ser menor o igual a 1 (incluye diagonales)
             return Math.Abs(targetTile.X - playerTile.X) <= 1 && Math.Abs(targetTile.Y - playerTile.Y) <= 1;
         }
 
-        // ============================================================================================
-        // 馃摝 SECCI脫N 1: INTERACCI脫N EN MEN脷 (Drag & Drop & SWAP)
-        // ============================================================================================
         private void HandleMenuInteraction(ButtonPressedEventArgs e)
         {
             if (e.Button != SButton.MouseLeft && e.Button != SButton.MouseRight) return;
@@ -82,7 +76,7 @@ namespace ELE.Core.Systems
             Item heldItem = Game1.player.CursorSlotItem;
             Item hoveredItem = Mod.Helper.Reflection.GetField<Item>(Game1.activeClickableMenu, "hoveredItem", false)?.GetValue();
 
-            // CASO: Arrastrar Mut谩geno (held) sobre Inyector (hovered)
+            // CASO: Arrastrar Mutágeno (held) sobre Inyector (hovered)
             if (heldItem != null && heldItem.ItemId.Contains(MutagenBaseId) && 
                 hoveredItem != null && hoveredItem.ItemId == InjectorItemId)
             {
@@ -91,9 +85,6 @@ namespace ELE.Core.Systems
             }
         }
 
-        // ============================================================================================
-        // 鈿欙笍 L脫GICA CENTRAL DE RECARGA (SWAP PURO)
-        // ============================================================================================
         private void PerformReloadLogic(Item injector, Item ammoSource)
         {
             int currentLoad = 0;
@@ -107,10 +98,7 @@ namespace ELE.Core.Systems
             // 1. DETECTAR NECESIDAD DE SWAP (Cambio de Tipo)
             if (currentLoad > 0 && !string.IsNullOrEmpty(currentAmmoType) && currentAmmoType != ammoSource.ItemId)
             {
-                // Preparamos el item a eyectar
                 ejectedAmmo = ItemRegistry.Create(currentAmmoType, currentLoad);
-                
-                // Vaciamos el inyector virtualmente
                 currentLoad = 0;
                 injector.modData[AmmoCountKey] = "0";
             }
@@ -125,40 +113,33 @@ namespace ELE.Core.Systems
                 return;
             }
 
-            // 3. TRANSFERIR (Cargar Inyector)
+            // 3. TRANSFERIR
             int toLoad = Math.Min(spaceFree, ammoSource.Stack);
             
             injector.modData[AmmoCountKey] = (currentLoad + toLoad).ToString();
             injector.modData[AmmoTypeKey] = ammoSource.ItemId; 
 
-            // 4. ACTUALIZAR FUENTE (Mano)
+            // 4. ACTUALIZAR FUENTE
             ammoSource.Stack -= toLoad;
 
-            // 5. MANEJO FINAL DEL SWAP (La Magia)
+            // 5. MANEJO FINAL DEL SWAP
             if (ejectedAmmo != null)
             {
                 Game1.playSound("coin");
 
-                // ESCENARIO A: Consumimos todo el stack de la mano (Perfect Swap)
-                // Ejemplo: Ten铆as 10 Chaos, Inyector tom贸 10 Chaos. Mano vac铆a. Ponemos el Growth eyectado en la mano.
                 if (ammoSource.Stack <= 0)
                 {
                      Game1.player.CursorSlotItem = ejectedAmmo;
                 }
-                // ESCENARIO B: Sobr贸 munici贸n en la mano (Partial Fill)
-                // Ejemplo: Ten铆as 50 Chaos, Inyector tom贸 20. Te quedan 30 Chaos.
-                // El Growth eyectado debe buscar sitio en el inventario.
                 else
                 {
                     if (!Game1.player.addItemToInventoryBool(ejectedAmmo))
                     {
-                        // Si inventario lleno, ni modo, al suelo (es el 煤nico caso donde pasa)
                         Game1.createItemDebris(ejectedAmmo, Game1.player.getStandingPosition(), Game1.player.FacingDirection);
                     }
                 }
             }
             
-            // Limpieza final si la fuente se agot贸 y no hubo swap (mismo tipo)
             if (ammoSource.Stack <= 0 && ejectedAmmo == null)
             {
                 Game1.player.CursorSlotItem = null;
@@ -167,17 +148,13 @@ namespace ELE.Core.Systems
             Game1.playSound("load_gun"); 
         }
 
-        // ============================================================================================
-        // 馃幆 L脫GICA DE DISPARO
-        // ============================================================================================
-        
         private bool TryGetTargetCrop(Vector2 cursorTile, out HoeDirt dirt, out Vector2 tileLocation)
         {
             dirt = null;
             tileLocation = cursorTile;
             GameLocation loc = Game1.currentLocation;
 
-            // 1. Tile directo (Mouse/Tap)
+            // 1. Tile directo
             if (loc.terrainFeatures.TryGetValue(cursorTile, out TerrainFeature tf) && tf is HoeDirt hd && hd.crop != null)
             {
                 dirt = hd;
@@ -213,12 +190,12 @@ namespace ELE.Core.Systems
             int newCount = currentAmmo - 1;
             tool.modData[AmmoCountKey] = newCount.ToString();
             
-            // Animacion segura
-            Game1.player.FarmerSprite.animateOnce(new AnimationFrame[] {
-				new AnimationFrame(57, 100), 
-				new AnimationFrame(58, 100), 
-				new AnimationFrame(0, 100)
-			});
+            // CORRECCIóN ANIMACIóN: Usar FarmerSprite.AnimationFrame explícitamente
+            Game1.player.FarmerSprite.animateOnce(new FarmerSprite.AnimationFrame[] {
+                new FarmerSprite.AnimationFrame(57, 100), 
+                new FarmerSprite.AnimationFrame(58, 100), 
+                new FarmerSprite.AnimationFrame(0, 100)
+            });
         }
 
         private void ApplyMutagenEffect(GameLocation loc, Vector2 tile, HoeDirt dirt, string mutagenId)
