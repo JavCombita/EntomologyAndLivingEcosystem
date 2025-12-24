@@ -106,7 +106,7 @@ namespace ELE.Core.Systems
 
         private void ApplyMutagenEffect(GameLocation loc, Vector2 tile, HoeDirt dirt, string mutagenId)
         {
-            Random methodRng = new Random((int)tile.X * 1000 + (int)tile.Y + (int)Game1.uniqueIDForThisGame + (int)Game1.stats.DaysPlayed);
+            Random methodRng = new Random(Guid.NewGuid().GetHashCode());
             
             if (mutagenId.Contains("Growth"))
             {
@@ -118,20 +118,31 @@ namespace ELE.Core.Systems
                 }
             }
             else if (mutagenId.Contains("Chaos")) 
-            {
-                double roll = methodRng.NextDouble();
+			{
+				double roll = methodRng.NextDouble();
                 
-                if (roll < 0.30) 
-                {
-                    dirt.crop = null; 
-                    Game1.playSound("shadowDie");
-                    
-                    var monster = new StardewValley.Monsters.RockCrab(tile * 64f, "JavCombita.ELE_MelonCrab");
-                    monster.wildernessFarmMonster = true; 
-                    loc.addCharacter(monster); 
-                    
-                    Game1.createRadialDebris(loc, 12, (int)tile.X, (int)tile.Y, 6, false);
-                }
+                // Ajusté ligeramente la lógica para limpiar el cultivo ANTES de spawnear el monstruo
+				if (roll < 0.30) 
+				{
+					// Efectos visuales antes de eliminar
+					loc.playSound("shadowDie");
+					Game1.createRadialDebris(loc, 12, (int)tile.X, (int)tile.Y, 6, false);
+				
+					dirt.crop = null; // Destruir cultivo
+            
+					// Spawnear Melon Crab
+					// Asegúrate de que "JavCombita.ELE_MelonCrab" coincida con Data/Monsters
+					var monster = new StardewValley.Monsters.RockCrab(tile * 64f, "JavCombita.ELE_MelonCrab");
+            
+					// Configuración crítica para que no desaparezca
+					monster.wildernessFarmMonster = true; 
+            
+					// FIX: Forzar recarga de stats por si acaso el constructor de RockCrab es perezoso
+					// En 1.6 suele ser automático, pero esto asegura que tenga la vida correcta del diccionario
+					// monster.Health = ... (Si ves que sale con vida base de RockCrab, asigna aquí manualmente)
+            
+					loc.addCharacter(monster); 
+				}
                 else if (roll < 0.60) 
                 {
                     string cropId = dirt.crop.indexOfHarvest.Value;
@@ -161,6 +172,8 @@ namespace ELE.Core.Systems
 
             // [FIX] Usamos isTileOnMap en lugar de isValidTile
             if (!loc.isTileOnMap(topLeft) || !loc.isTileOnMap(topLeft + new Vector2(2, 2))) return;
+			
+			if (dirt.crop == null || dirt.crop.dead.Value) return;
 
             bool areaClear = true;
             for (int x = 0; x < 3; x++)

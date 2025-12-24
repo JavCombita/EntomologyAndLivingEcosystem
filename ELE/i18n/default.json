@@ -43,7 +43,7 @@
   "debug.recipes_known": "All ELE recipes were already known.",
   "debug.recipe_learned": "Unlocked: {{val1}}",
   "debug.recipe_already_known": "Already known: {{val1}}",
-  "debug.items_added": "Attempted to add {{val1}} of {{val2}} items to inventory.",
+  "debug.items_added": "Added {{val1}} stacks of {{val2}} items.",
   "debug.item_error": "Could not create item: {{val1}}",
   "debug.invalid_amount": "Invalid amount. Usage: ele_add_items <n>. Defaulting to 1.",
   

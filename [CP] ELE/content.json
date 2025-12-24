@@ -41,7 +41,7 @@
 		},
 		{
             "Action": "Load",
-            "Target": "Mods/JavCombita/ELE/MelonCrab",
+            "Target": "Characters/Monsters/JavCombita.ELE_MelonCrab",
             "FromFile": "assets/melon_crab_sheet.png" 
         },
 
