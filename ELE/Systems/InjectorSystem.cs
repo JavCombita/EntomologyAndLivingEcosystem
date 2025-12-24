@@ -14,8 +14,9 @@ namespace ELE.Core.Systems
     {
         private readonly ModEntry Mod;
         
-        // IDs
+        // IDs: (O) es vital para coincidir con el inventario
         private const string InjectorItemId = "(O)JavCombita.ELE_AlchemicalInjector";
+        // String parcial para detectar los mutágenos
         private const string MutagenPartId = "JavCombita.ELE_Mutagen"; 
         
         // Keys para ModData
@@ -34,30 +35,47 @@ namespace ELE.Core.Systems
             // Solo lógica de mundo
             if (!Context.IsWorldReady || !Context.IsPlayerFree) return;
             
+            // Unificamos botón de uso (Clic / Tap)
             if (!e.Button.IsUseToolButton() && !e.Button.IsActionButton()) return;
 
             Item heldItem = Game1.player.CurrentItem;
             if (heldItem == null) return;
 
-            // CASO A: SOSTENIENDO EL INYECTOR (Disparar)
-            if (heldItem.ItemId == InjectorItemId)
+            // --- CASO A: SOSTENIENDO EL INYECTOR (Disparar) ---
+            if (heldItem.ItemId.Contains("JavCombita.ELE_AlchemicalInjector"))
             {
                 if (TryGetTargetCrop(e.Cursor.Tile, out HoeDirt dirt, out Vector2 tile))
                 {
-                    // Si está en rango, disparamos. Si no, el juego camina.
+                    // Si está en rango, disparamos.
                     if (IsInRange(tile))
                     {
                         HandleInjection(heldItem, dirt, tile);
                         Mod.Helper.Input.Suppress(e.Button);
                     }
+                    // Si NO está en rango, no hacemos nada (ni suprimimos), así el jugador camina.
                 }
             }
-            // CASO B: SOSTENIENDO UN MUTÁGENO (Recargar el Inyector guardado)
+            // --- CASO B: SOSTENIENDO UN MUTÁGENO (Recargar) ---
             else if (heldItem.ItemId.Contains(MutagenPartId))
             {
-                HandleReloadFromHand(heldItem);
-                Mod.Helper.Input.Suppress(e.Button);
+                // >>> FIX ANDROID: Solo recargar si tocamos al JUGADOR <<<
+                if (IsClickingOnPlayer(e.Cursor.Tile))
+                {
+                    HandleReloadFromHand(heldItem);
+                    Mod.Helper.Input.Suppress(e.Button);
+                }
+                // Si tocamos cualquier otro lado (suelo, aire, UI), NO hacemos nada.
+                // Esto permite caminar, abrir inventario, etc.
             }
+        }
+
+        // >>> NUEVO: Detecta si el clic/tap fue sobre el granjero <<<
+        private bool IsClickingOnPlayer(Vector2 cursorTile)
+        {
+            Vector2 playerTile = Game1.player.Tile;
+            // Verificamos si tocamos el tile de los pies (Tile) o el tile de la cabeza (Tile.Y - 1)
+            // Esto hace que sea fácil atinarle en pantallas táctiles
+            return cursorTile == playerTile || cursorTile == new Vector2(playerTile.X, playerTile.Y - 1);
         }
 
         // ============================================================================================
@@ -65,8 +83,8 @@ namespace ELE.Core.Systems
         // ============================================================================================
         private void HandleReloadFromHand(Item mutagenInHand)
         {
-            // 1. Buscar el Inyector en el inventario
-            Item injector = Game1.player.Items.FirstOrDefault(i => i != null && i.ItemId == InjectorItemId);
+            // 1. Buscar el Inyector en el inventario (búsqueda flexible)
+            Item injector = Game1.player.Items.FirstOrDefault(i => i != null && i.ItemId.Contains("JavCombita.ELE_AlchemicalInjector"));
 
             if (injector == null)
             {
@@ -83,26 +101,25 @@ namespace ELE.Core.Systems
             // 3. LÓGICA DE SWAP (Si hay munición y es DIFERENTE, la expulsamos)
             if (currentLoad > 0 && !string.IsNullOrEmpty(currentType) && currentType != mutagenInHand.ItemId)
             {
-                // Crear item con la munición vieja
                 Item oldAmmo = ItemRegistry.Create(currentType, currentLoad);
                 
                 // Intentar devolver al inventario
                 if (Game1.player.addItemToInventoryBool(oldAmmo))
                 {
                     Game1.playSound("coin");
-                    // Vaciar virtualmente para recibir lo nuevo
                     currentLoad = 0; 
                     injector.modData[AmmoCountKey] = "0";
                 }
                 else
                 {
-                    Game1.showRedMessage("Inventory full! Cannot swap ammo.");
-                    return;
+                    // Si inventario lleno, tiramos al suelo
+                    Game1.createItemDebris(oldAmmo, Game1.player.getStandingPosition(), Game1.player.FacingDirection);
+                    currentLoad = 0;
+                    injector.modData[AmmoCountKey] = "0";
                 }
             }
 
             // 4. CALCULAR RECARGA (SIN LÍMITE)
-            // Tomamos TODO lo que hay en la mano
             int toLoad = mutagenInHand.Stack;
 
             // 5. APLICAR CAMBIOS
@@ -110,14 +127,13 @@ namespace ELE.Core.Systems
             injector.modData[AmmoTypeKey] = mutagenInHand.ItemId; 
 
             // 6. CONSUMIR TODO EL STACK DE LA MANO
-            // Como tomamos todo, simplemente ponemos el item en null
             Game1.player.Items[Game1.player.CurrentToolIndex] = null;
 
             // 7. FEEDBACK
             Game1.playSound("load_gun");
             Game1.showGlobalMessage(Mod.Helper.Translation.Get("injector.reloaded", new { count = toLoad }));
             
-            // Animación de cargar
+            // Animación
             Game1.player.FarmerSprite.animateOnce(new FarmerSprite.AnimationFrame[] {
                 new FarmerSprite.AnimationFrame(57, 300),
                 new FarmerSprite.AnimationFrame(0, 100)
@@ -142,6 +158,7 @@ namespace ELE.Core.Systems
             int newCount = currentAmmo - 1;
             tool.modData[AmmoCountKey] = newCount.ToString();
             
+            // Animación
             Game1.player.FarmerSprite.animateOnce(new FarmerSprite.AnimationFrame[] {
                 new FarmerSprite.AnimationFrame(57, 100), 
                 new FarmerSprite.AnimationFrame(58, 100), 
@@ -247,7 +264,8 @@ namespace ELE.Core.Systems
 
         private void OnRenderedWorld(object sender, RenderedWorldEventArgs e)
         {
-            if (Game1.player.CurrentItem == null || Game1.player.CurrentItem.ItemId != InjectorItemId) return;
+            if (Game1.player.CurrentItem == null || !Game1.player.CurrentItem.ItemId.Contains("JavCombita.ELE_AlchemicalInjector")) return;
+            
             Item tool = Game1.player.CurrentItem;
             if (tool.modData.TryGetValue(AmmoCountKey, out string count) && int.TryParse(count, out int ammoVal))
             {

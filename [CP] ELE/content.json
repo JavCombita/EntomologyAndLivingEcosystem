@@ -134,7 +134,7 @@
                     "DisplayName": "{{i18n:item.mutagen_growth.name}}",
                     "Description": "{{i18n:item.mutagen_growth.desc}}",
                     "Type": "Basic",
-                    "Category": -81, 
+                    "Category": 0, 
                     "Price": 200,
                     "Texture": "Mods/JavCombita/ELE/MutagenGrowth",
                     "SpriteIndex": 0
@@ -144,7 +144,7 @@
                     "DisplayName": "{{i18n:item.mutagen_chaos.name}}",
                     "Description": "{{i18n:item.mutagen_chaos.desc}}",
                     "Type": "Basic",
-                    "Category": -81,
+                    "Category": 0,
                     "Price": 200,
                     "Texture": "Mods/JavCombita/ELE/MutagenChaos",
                     "SpriteIndex": 0
