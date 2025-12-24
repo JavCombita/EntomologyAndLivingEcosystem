@@ -273,7 +273,7 @@
                 "JavCombita.ELE_QiUpgradeMail": "{{i18n:mail.qi_upgrades.body}}%item craftingRecipe Nutrient_Spreader_Mk2 %% %item craftingRecipe Nutrient_Spreader_Mk3 %% %item craftingRecipe Nutrient_Spreader_Omega %%[#]{{i18n:mail.qi_upgrades.title}}",
 				
 				// Carta del Mago: Da receta de Inyector Y Mutágeno de Crecimiento
-                "JavCombita.ELE_WizardInjectorMail": "{{i18n:mail.wizard_injector.body}}%item craftingRecipe AlchemicalInjector %% %item craftingRecipe Mutagen_Growth %%[#]{{i18n:mail.wizard_injector.title}}",
+                "JavCombita.ELE_WizardInjectorMail": "{{i18n:mail.wizard_injector.body}}%item craftingRecipe Alchemical_Injector %% %item craftingRecipe Mutagen_Growth %%[#]{{i18n:mail.wizard_injector.title}}",
 					
                 // Carta de Krobus: Da receta de Mutágeno de Caos
                 "JavCombita.ELE_KrobusChaosMail": "{{i18n:mail.krobus_chaos.body}}%item craftingRecipe Mutagen_Chaos %%[#]{{i18n:mail.krobus_chaos.title}}",

@@ -186,7 +186,7 @@ namespace ELE.Core
                     "(O)JavCombita.ELE_Fertilizer_P",
                     "(O)JavCombita.ELE_Fertilizer_K",
                     "(O)JavCombita.ELE_Fertilizer_Omni",
-					"(O)JavCombita.ELE_Alchemical_Injector",
+					"(O)JavCombita.ELE_AlchemicalInjector",
 					"(O)JavCombita.ELE_Mutagen_Growth",
 					"(O)JavCombita.ELE_Mutagen_Chaos",
                     "(BC)JavCombita.ELE_LadybugShelter",
