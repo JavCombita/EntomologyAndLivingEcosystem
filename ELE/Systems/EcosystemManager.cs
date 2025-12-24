@@ -65,8 +65,10 @@ namespace ELE.Core.Systems
 
                     if (TryApplyBoosterManual(loc, tile, held.ItemId)) 
                     {
-                        // CORRECCIÓN ANIMACIÓN: Usar FarmerSprite.AnimationFrame explícitamente
-                        Game1.player.FarmerSprite.animateOnce(new FarmerSprite.AnimationFrame(196, 150)); 
+                        // CORRECCIÓN: Envolvemos el frame único en un array []
+                        Game1.player.FarmerSprite.animateOnce(new FarmerSprite.AnimationFrame[] {
+                            new FarmerSprite.AnimationFrame(196, 150)
+                        }); 
                         
                         Game1.createRadialDebris(loc, 14, (int)tile.X, (int)tile.Y, 4, false); 
                         Game1.playSound("dirtyHit");
