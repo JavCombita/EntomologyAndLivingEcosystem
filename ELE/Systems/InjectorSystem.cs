@@ -6,6 +6,7 @@ using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
+using StardewValley.Menus;
 using StardewValley.TerrainFeatures;
 
 namespace ELE.Core.Systems
@@ -26,82 +27,198 @@ namespace ELE.Core.Systems
         {
             this.Mod = mod;
             mod.Helper.Events.Input.ButtonPressed += OnButtonPressed;
-            mod.Helper.Events.Display.RenderedHud += OnRenderedHud;
+            mod.Helper.Events.Display.RenderedWorld += OnRenderedWorld; 
         }
 
         private void OnButtonPressed(object sender, ButtonPressedEventArgs e)
         {
-            if (!Context.IsWorldReady) return;
+            // 1. LÓGICA DE INVENTARIO (Drag & Drop)
+            if (Game1.activeClickableMenu != null)
+            {
+                HandleMenuInteraction(e);
+                return; 
+            }
+
+            // 2. LÓGICA DE MUNDO (Solo Disparar)
+            if (!Context.IsWorldReady || !Context.IsPlayerFree) return;
 
             if (Game1.player.CurrentItem == null || Game1.player.CurrentItem.ItemId != InjectorItemId) return;
 
-            if (e.Button.IsActionButton())
+            // Unificamos Left Click (PC) y Tap (Android)
+            if (e.Button.IsUseToolButton() || e.Button == SButton.MouseLeft)
             {
-                HandleReload();
-                Mod.Helper.Input.Suppress(e.Button); 
-            }
-            else if (e.Button.IsUseToolButton())
-            {
-                HandleInjection(e);
-                Mod.Helper.Input.Suppress(e.Button); 
+                // Solo intentamos disparar si hay un cultivo válido
+                if (TryGetTargetCrop(e.Cursor.Tile, out HoeDirt dirt, out Vector2 tile))
+                {
+                    // NUEVO: Verificación de Rango (0-1 Tile)
+                    if (IsInRange(tile))
+                    {
+                        HandleInjection(dirt, tile);
+                        Mod.Helper.Input.Suppress(e.Button);
+                    }
+                    else
+                    {
+                        Game1.showRedMessage("Out of Range"); // Feedback visual
+                    }
+                }
             }
         }
 
-        private void HandleReload()
+        // Helper para verificar distancia (0 o 1 tile)
+        private bool IsInRange(Vector2 targetTile)
         {
-            Item tool = Game1.player.CurrentItem;
-            Item ammo = Game1.player.Items.FirstOrDefault(i => i != null && i.ItemId.Contains(MutagenBaseId));
+            Vector2 playerTile = Game1.player.Tile;
+            // Distancia absoluta en X y Y debe ser menor o igual a 1 (incluye diagonales)
+            return Math.Abs(targetTile.X - playerTile.X) <= 1 && Math.Abs(targetTile.Y - playerTile.Y) <= 1;
+        }
 
-            if (ammo == null)
+        // ============================================================================================
+        // 📦 SECCIÓN 1: INTERACCIÓN EN MENÚ (Drag & Drop & SWAP)
+        // ============================================================================================
+        private void HandleMenuInteraction(ButtonPressedEventArgs e)
+        {
+            if (e.Button != SButton.MouseLeft && e.Button != SButton.MouseRight) return;
+
+            Item heldItem = Game1.player.CursorSlotItem;
+            Item hoveredItem = Mod.Helper.Reflection.GetField<Item>(Game1.activeClickableMenu, "hoveredItem", false)?.GetValue();
+
+            // CASO: Arrastrar Mutágeno (held) sobre Inyector (hovered)
+            if (heldItem != null && heldItem.ItemId.Contains(MutagenBaseId) && 
+                hoveredItem != null && hoveredItem.ItemId == InjectorItemId)
             {
-                Game1.drawObjectDialogue(Mod.Helper.Translation.Get("injector.no_ammo"));
-                return;
+                PerformReloadLogic(hoveredItem, heldItem);
+                Mod.Helper.Input.Suppress(e.Button);
+            }
+        }
+
+        // ============================================================================================
+        // ⚙️ LÓGICA CENTRAL DE RECARGA (SWAP PURO)
+        // ============================================================================================
+        private void PerformReloadLogic(Item injector, Item ammoSource)
+        {
+            int currentLoad = 0;
+            string currentAmmoType = null;
+
+            if (injector.modData.TryGetValue(AmmoCountKey, out string countStr)) int.TryParse(countStr, out currentLoad);
+            if (injector.modData.TryGetValue(AmmoTypeKey, out string typeStr)) currentAmmoType = typeStr;
+
+            Item ejectedAmmo = null;
+
+            // 1. DETECTAR NECESIDAD DE SWAP (Cambio de Tipo)
+            if (currentLoad > 0 && !string.IsNullOrEmpty(currentAmmoType) && currentAmmoType != ammoSource.ItemId)
+            {
+                // Preparamos el item a eyectar
+                ejectedAmmo = ItemRegistry.Create(currentAmmoType, currentLoad);
+                
+                // Vaciamos el inyector virtualmente
+                currentLoad = 0;
+                injector.modData[AmmoCountKey] = "0";
             }
 
-            int currentLoad = 0;
-            if (tool.modData.TryGetValue(AmmoCountKey, out string countStr)) int.TryParse(countStr, out currentLoad);
+            // 2. CALCULAR ESPACIO
+            int maxCapacity = 20;
+            int spaceFree = maxCapacity - currentLoad;
 
-            int spaceFree = 20 - currentLoad;
             if (spaceFree <= 0)
             {
-                Game1.showRedMessage(Mod.Helper.Translation.Get("injector.full"));
+                Game1.playSound("cancel");
                 return;
             }
 
-            int toLoad = Math.Min(spaceFree, ammo.Stack);
+            // 3. TRANSFERIR (Cargar Inyector)
+            int toLoad = Math.Min(spaceFree, ammoSource.Stack);
             
-            tool.modData[AmmoCountKey] = (currentLoad + toLoad).ToString();
-            tool.modData[AmmoTypeKey] = ammo.ItemId; 
+            injector.modData[AmmoCountKey] = (currentLoad + toLoad).ToString();
+            injector.modData[AmmoTypeKey] = ammoSource.ItemId; 
 
-            ammo.Stack -= toLoad;
-            if (ammo.Stack <= 0) Game1.player.Items.Remove(ammo);
+            // 4. ACTUALIZAR FUENTE (Mano)
+            ammoSource.Stack -= toLoad;
+
+            // 5. MANEJO FINAL DEL SWAP (La Magia)
+            if (ejectedAmmo != null)
+            {
+                Game1.playSound("coin");
+
+                // ESCENARIO A: Consumimos todo el stack de la mano (Perfect Swap)
+                // Ejemplo: Tenías 10 Chaos, Inyector tomó 10 Chaos. Mano vacía. Ponemos el Growth eyectado en la mano.
+                if (ammoSource.Stack <= 0)
+                {
+                     Game1.player.CursorSlotItem = ejectedAmmo;
+                }
+                // ESCENARIO B: Sobró munición en la mano (Partial Fill)
+                // Ejemplo: Tenías 50 Chaos, Inyector tomó 20. Te quedan 30 Chaos.
+                // El Growth eyectado debe buscar sitio en el inventario.
+                else
+                {
+                    if (!Game1.player.addItemToInventoryBool(ejectedAmmo))
+                    {
+                        // Si inventario lleno, ni modo, al suelo (es el único caso donde pasa)
+                        Game1.createItemDebris(ejectedAmmo, Game1.player.getStandingPosition(), Game1.player.FacingDirection);
+                    }
+                }
+            }
+            
+            // Limpieza final si la fuente se agotó y no hubo swap (mismo tipo)
+            if (ammoSource.Stack <= 0 && ejectedAmmo == null)
+            {
+                Game1.player.CursorSlotItem = null;
+            }
 
             Game1.playSound("load_gun"); 
-            Game1.showGlobalMessage(Mod.Helper.Translation.Get("injector.reloaded", new { count = toLoad }));
         }
 
-        private void HandleInjection(ButtonPressedEventArgs e)
+        // ============================================================================================
+        // 🎯 LÓGICA DE DISPARO
+        // ============================================================================================
+        
+        private bool TryGetTargetCrop(Vector2 cursorTile, out HoeDirt dirt, out Vector2 tileLocation)
+        {
+            dirt = null;
+            tileLocation = cursorTile;
+            GameLocation loc = Game1.currentLocation;
+
+            // 1. Tile directo (Mouse/Tap)
+            if (loc.terrainFeatures.TryGetValue(cursorTile, out TerrainFeature tf) && tf is HoeDirt hd && hd.crop != null)
+            {
+                dirt = hd;
+                return true;
+            }
+
+            // 2. Tile frontal (Android/Controller)
+            Vector2 grabTile = new Vector2((int)(Game1.player.GetToolLocation().X / 64f), (int)(Game1.player.GetToolLocation().Y / 64f));
+            if (grabTile != cursorTile && loc.terrainFeatures.TryGetValue(grabTile, out TerrainFeature tf2) && tf2 is HoeDirt hd2 && hd2.crop != null)
+            {
+                dirt = hd2;
+                tileLocation = grabTile;
+                return true;
+            }
+
+            return false;
+        }
+
+        private void HandleInjection(HoeDirt dirt, Vector2 tile)
         {
             Item tool = Game1.player.CurrentItem;
 
-            if (!tool.modData.TryGetValue(AmmoCountKey, out string cStr) || int.Parse(cStr) <= 0)
+            if (!tool.modData.TryGetValue(AmmoCountKey, out string cStr) || !int.TryParse(cStr, out int currentAmmo) || currentAmmo <= 0)
             {
                 Game1.playSound("click"); 
+                Game1.showRedMessage(Mod.Helper.Translation.Get("injector.no_ammo"));
                 return;
             }
 
-            Vector2 tile = e.Cursor.Tile;
             GameLocation loc = Game1.currentLocation;
+            ApplyMutagenEffect(loc, tile, dirt, tool.modData[AmmoTypeKey]);
             
-            if (loc.terrainFeatures.TryGetValue(tile, out TerrainFeature tf) && tf is HoeDirt dirt && dirt.crop != null)
-            {
-                ApplyMutagenEffect(loc, tile, dirt, tool.modData[AmmoTypeKey]);
-                
-                int newCount = int.Parse(cStr) - 1;
-                tool.modData[AmmoCountKey] = newCount.ToString();
-                
-                Game1.player.animateOnce(284); 
-            }
+            int newCount = currentAmmo - 1;
+            tool.modData[AmmoCountKey] = newCount.ToString();
+            
+            // Animación segura
+            Game1.player.FarmerSprite.animateOnce(new FarmerSprite.DataFrame[] {
+                new FarmerSprite.DataFrame(57, 100), 
+                new FarmerSprite.DataFrame(58, 100), 
+                new FarmerSprite.DataFrame(0, 100)
+            });
         }
 
         private void ApplyMutagenEffect(GameLocation loc, Vector2 tile, HoeDirt dirt, string mutagenId)
@@ -118,48 +235,24 @@ namespace ELE.Core.Systems
                 }
             }
             else if (mutagenId.Contains("Chaos")) 
-			{
-				double roll = methodRng.NextDouble();
-                
-                // Ajusté ligeramente la lógica para limpiar el cultivo ANTES de spawnear el monstruo
-				if (roll < 0.30) 
-				{
-					// Efectos visuales antes de eliminar
-					loc.playSound("shadowDie");
-					Game1.createRadialDebris(loc, 12, (int)tile.X, (int)tile.Y, 6, false);
-				
-					dirt.crop = null; // Destruir cultivo
-            
-					// Spawnear Melon Crab
-					// Asegúrate de que "JavCombita.ELE_MelonCrab" coincida con Data/Monsters
-					var monster = new StardewValley.Monsters.RockCrab(tile * 64f, "JavCombita.ELE_MelonCrab");
-            
-					// Configuración crítica para que no desaparezca
-					monster.wildernessFarmMonster = true; 
-            
-					// FIX: Forzar recarga de stats por si acaso el constructor de RockCrab es perezoso
-					// En 1.6 suele ser automático, pero esto asegura que tenga la vida correcta del diccionario
-					// monster.Health = ... (Si ves que sale con vida base de RockCrab, asigna aquí manualmente)
-            
-					loc.addCharacter(monster); 
-				}
-                else if (roll < 0.60) 
-                {
+            {
+                double roll = methodRng.NextDouble();
+                if (roll < 0.30) {
+                    loc.playSound("shadowDie");
+                    Game1.createRadialDebris(loc, 12, (int)tile.X, (int)tile.Y, 6, false);
+                    dirt.crop = null; 
+                    var monster = new StardewValley.Monsters.RockCrab(tile * 64f, "JavCombita.ELE_MelonCrab");
+                    monster.wildernessFarmMonster = true; 
+                    loc.addCharacter(monster); 
+                } else if (roll < 0.60) {
                     string cropId = dirt.crop.indexOfHarvest.Value;
                     bool isGiantCapable = (cropId == "190" || cropId == "254" || cropId == "276");
-
-                    if (isGiantCapable)
-                    {
-                        TryForceGiantCrop(loc, tile, cropId);
-                    }
-                    else
-                    {
+                    if (isGiantCapable) TryForceGiantCrop(loc, tile, cropId);
+                    else {
                         dirt.crop.growCompletely();
                         Game1.playSound("reward");
                     }
-                }
-                else 
-                {
+                } else {
                     dirt.crop.currentPhase.Value++;
                     Game1.playSound("bubbles");
                 }
@@ -169,94 +262,43 @@ namespace ELE.Core.Systems
         private void TryForceGiantCrop(GameLocation loc, Vector2 centerTile, string cropId)
         {
             Vector2 topLeft = centerTile - new Vector2(1, 1);
+            if (!loc.isTileOnMap(topLeft) || !loc.isTileOnMap(topLeft + new Vector2(2, 2))) return;
 
-            // 1. VERIFICACIÓN (Sin destruir nada todavía)
-            // Primero nos aseguramos de que todo el área 3x3 sea válida.
             bool areaClear = true;
-            for (int x = 0; x < 3; x++)
-            {
-                for (int y = 0; y < 3; y++)
-                {
+            for (int x = 0; x < 3; x++) {
+                for (int y = 0; y < 3; y++) {
                     Vector2 current = topLeft + new Vector2(x, y);
-                    
-                    // Verificar límites del mapa
-                    if (!loc.isTileOnMap(current))
-                    {
-                        areaClear = false;
-                        break;
-                    }
-
-                    // Verificar qué hay en el tile
-                    if (loc.terrainFeatures.TryGetValue(current, out TerrainFeature tf))
-                    {
-                        if (tf is HoeDirt) 
-                        {
-                            // Es tierra, está bien (incluso si tiene cultivo, lo aplastaremos)
-                        }
-                        else
-                        {
-                            // Es un árbol, suelo, u otra cosa que no es tierra de cultivo -> Bloqueo
-                            areaClear = false;
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        // No hay TerrainFeature (ej. piso de madera o vacío), podría ser un problema para el GiantCrop
-                        // Normalmente los GiantCrop necesitan estar sobre HoeDirt, pero asumiremos que el código original
-                        // solo quería limpiar el área.
+                    if (loc.terrainFeatures.TryGetValue(current, out TerrainFeature tf)) {
+                        if (!(tf is HoeDirt)) { areaClear = false; break; }
                     }
                 }
-                if (!areaClear) break;
             }
 
-            // 2. ACCIÓN
-            if (areaClear)
-            {
-                // PASO A: Limpiar el área 3x3 (Ahora que sabemos que es seguro)
-                for (int x = 0; x < 3; x++)
-                {
-                    for (int y = 0; y < 3; y++)
-                    {
+            if (areaClear) {
+                for (int x = 0; x < 3; x++) {
+                    for (int y = 0; y < 3; y++) {
                         Vector2 current = topLeft + new Vector2(x, y);
-                        if (loc.terrainFeatures.TryGetValue(current, out TerrainFeature tf) && tf is HoeDirt hd)
-                        {
-                            hd.crop = null; // ¡Adiós cultivo pequeño!
-                        }
+                        if (loc.terrainFeatures.TryGetValue(current, out TerrainFeature tf) && tf is HoeDirt hd) hd.crop = null;
                     }
                 }
-
-                // PASO B: Crear el Gigante
                 loc.resourceClumps.Add(new GiantCrop(cropId, topLeft));
-                
                 Game1.playSound("stumpCrack");
                 Game1.createRadialDebris(loc, 12, (int)centerTile.X, (int)centerTile.Y, 12, false);
-            }
-            else
-            {
-                // FALLBACK: Si no se pudo hacer gigante, crecemos el del centro.
-                // AQUÍ ESTABA TU ERROR: Usabas 'dirt' que no existía.
-                // Solución: Buscamos la tierra en centerTile manualmente.
-                if (loc.terrainFeatures.TryGetValue(centerTile, out TerrainFeature tf) && tf is HoeDirt hd && hd.crop != null)
-                {
-                    hd.crop.growCompletely();
-                }
+            } else {
+                if (loc.terrainFeatures.TryGetValue(centerTile, out TerrainFeature tf) && tf is HoeDirt hd && hd.crop != null) hd.crop.growCompletely();
             }
         }
 
-        private void OnRenderedHud(object sender, RenderedHudEventArgs e)
+        private void OnRenderedWorld(object sender, RenderedWorldEventArgs e)
         {
             if (Game1.player.CurrentItem == null || Game1.player.CurrentItem.ItemId != InjectorItemId) return;
-            
             Item tool = Game1.player.CurrentItem;
-            if (tool.modData.TryGetValue(AmmoCountKey, out string count))
+            if (tool.modData.TryGetValue(AmmoCountKey, out string count) && int.TryParse(count, out int ammoVal))
             {
-                Vector2 slotPos = new Vector2(
-                    (Game1.uiViewport.Width / 2) - (6 * 64) + (Game1.player.CurrentToolIndex * 64),
-                    Game1.uiViewport.Height - 64 - 24
-                );
-                
-                Utility.drawTinyDigits(int.Parse(count), e.SpriteBatch, slotPos + new Vector2(40, 40), 3f, 1f, Color.Yellow);
+                Vector2 playerPos = Game1.player.getLocalPosition(Game1.viewport);
+                Vector2 textPos = playerPos + new Vector2(10, -110);
+                e.SpriteBatch.DrawString(Game1.smallFont, ammoVal.ToString(), textPos + new Vector2(2, 2), Color.Black);
+                e.SpriteBatch.DrawString(Game1.smallFont, ammoVal.ToString(), textPos, Color.Yellow);
             }
         }
     }

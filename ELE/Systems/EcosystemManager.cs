@@ -55,17 +55,37 @@ namespace ELE.Core.Systems
             {
                 if (loc.terrainFeatures.TryGetValue(tile, out TerrainFeature tf) && tf is HoeDirt)
                 {
+                    // >>> NUEVO: Validación de Rango (0-1 Tile) <<<
+                    if (!IsInRange(tile))
+                    {
+                        Game1.showRedMessage("Out of Range");
+                        Mod.Helper.Input.Suppress(e.Button);
+                        return;
+                    }
+
                     if (TryApplyBoosterManual(loc, tile, held.ItemId)) 
                     {
+                        // >>> NUEVO: Animación y Partículas <<<
+                        Game1.player.animateOnce(new FarmerSprite.DataFrame(196, 150)); // Granjero se agacha
+                        Game1.createRadialDebris(loc, 14, (int)tile.X, (int)tile.Y, 4, false); // Partículas de tierra
+                        Game1.playSound("dirtyHit");
+
+                        // Consumo del item
                         held.Stack--;
                         if (held.Stack <= 0) 
                             Game1.player.Items[Game1.player.CurrentToolIndex] = null;
 
-                        Game1.playSound("dirtyHit");
                         Mod.Helper.Input.Suppress(e.Button);
                     } 
                 }
             }
+        }
+
+        // Helper para verificar distancia (0 o 1 tile)
+        private bool IsInRange(Vector2 targetTile)
+        {
+            Vector2 playerTile = Game1.player.Tile;
+            return Math.Abs(targetTile.X - playerTile.X) <= 1 && Math.Abs(targetTile.Y - playerTile.Y) <= 1;
         }
 
         private bool TryApplyBoosterManual(GameLocation loc, Vector2 tile, string id)
@@ -80,6 +100,7 @@ namespace ELE.Core.Systems
 
                 if (hasApplied)
                 {
+                     // Permitir sobreescribir si estamos aplicando Omni sobre uno normal
                      if (isOmni && !appliedType.Contains("Omni")) 
                      { 
                         // Permitir upgrade
@@ -130,6 +151,7 @@ namespace ELE.Core.Systems
             
             if (isBooster)
             {
+                // Efecto extra para visualización automática
                 Game1.createRadialDebris(location, 12, (int)tile.X, (int)tile.Y, 6, false);
             }
         }

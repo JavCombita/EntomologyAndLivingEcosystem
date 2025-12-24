@@ -20,6 +20,8 @@ namespace ELE.Core.Systems
         private const string AnalyzerItemId = "JavCombita.ELE_SoilAnalyzer";
         private const string SpreaderBaseId = "JavCombita.ELE_NutrientSpreader";
         private const string ShelterItemId = "JavCombita.ELE_LadybugShelter";
+        // NUEVO: ID del Inyector para la retícula
+        private const string InjectorItemId = "JavCombita.ELE_AlchemicalInjector";
 
         public RenderingSystem(ModEntry mod)
         {
@@ -41,14 +43,83 @@ namespace ELE.Core.Systems
             SpriteBatch b = e.SpriteBatch;
 
             // 1. DIBUJAR VISTA PREVIA DE RANGO (Si tiene máquina o shelter en mano)
+            // (Esta es tu lógica original intacta)
             DrawPlacementRadius(b);
 
             // 2. DIBUJAR OVERLAY DE NUTRIENTES (Si tiene analizador)
+            // (Tu lógica original intacta)
             if (IsPlayerHoldingAnalyzer())
             {
                 DrawSoilOverlay(b);
             }
+
+            // 3. NUEVO: DIBUJAR RETÍCULA DEL INYECTOR
+            // Solo si tiene el inyector en la mano
+            if (Game1.player.CurrentItem != null && Game1.player.CurrentItem.ItemId == InjectorItemId)
+            {
+                DrawInjectorTarget(b);
+            }
         }
+
+        // ========================================================================================
+        // LOGICA NUEVA: INYECTOR (Retícula de puntería)
+        // ========================================================================================
+        private void DrawInjectorTarget(SpriteBatch b)
+        {
+            // Detectamos el tile al que se está apuntando (Mouse o Frente del jugador)
+            Vector2 targetTile = GetTargetTile();
+            
+            GameLocation loc = Game1.currentLocation;
+            
+            // Verificamos si es un objetivo válido (Tierra arada con cultivo)
+            if (loc.terrainFeatures.TryGetValue(targetTile, out TerrainFeature tf) && tf is HoeDirt dirt && dirt.crop != null)
+            {
+                // Calcular posición en pantalla
+                Vector2 screenPos = Game1.GlobalToLocal(Game1.viewport, targetTile * 64f);
+                Rectangle rect = new Rectangle((int)screenPos.X, (int)screenPos.Y, 64, 64);
+
+                // Verificar rango (0-1 tiles, igual que en EcosystemManager)
+                bool inRange = IsInRange(targetTile);
+                
+                // Verde si está en rango, Rojo si está lejos
+                Color color = inRange ? Color.LimeGreen * 0.5f : Color.Red * 0.5f;
+
+                // Dibujar el borde
+                DrawBorder(b, screenPos, 64, 64, color, 4);
+
+                // Indicador extra (X roja) si está fuera de rango para mayor claridad
+                if (!inRange)
+                {
+                    b.Draw(Game1.mouseCursors, screenPos + new Vector2(16, 16), new Rectangle(266, 470, 16, 16), Color.Red, 0f, Vector2.Zero, 2f, SpriteEffects.None, 1f);
+                }
+            }
+        }
+
+        private Vector2 GetTargetTile()
+        {
+            // Lógica unificada para PC (Mouse) y Android/Gamepad (Frente)
+            // Prioridad 1: Mouse (si se ha movido y está dentro del mapa)
+            if (Mod.Helper.Input.GetCursorPosition().GetScaledScreenPixels() != Vector2.Zero)
+            {
+               Vector2 mouseTile = Mod.Helper.Input.GetCursorPosition().Tile;
+               if (Game1.currentLocation.isTileOnMap(mouseTile)) 
+                   return mouseTile;
+            }
+
+            // Prioridad 2: Tile frontal (Android/Controller fallback)
+            return new Vector2((int)(Game1.player.GetToolLocation().X / 64f), (int)(Game1.player.GetToolLocation().Y / 64f));
+        }
+
+        private bool IsInRange(Vector2 targetTile)
+        {
+            Vector2 playerTile = Game1.player.Tile;
+            // Distancia Chebyshev (radio cuadrado de 1 tile)
+            return Math.Abs(targetTile.X - playerTile.X) <= 1 && Math.Abs(targetTile.Y - playerTile.Y) <= 1;
+        }
+
+        // ========================================================================================
+        // LOGICA EXISTENTE: RADIOS Y OVERLAYS (Intacta)
+        // ========================================================================================
 
         private void DrawPlacementRadius(SpriteBatch b)
         {
@@ -64,13 +135,13 @@ namespace ELE.Core.Systems
             if (heldItem.ItemId.Contains(SpreaderBaseId))
             {
                 radius = GetRadiusFromItem(heldItem.ItemId);
-                isCircular = false; // Lógica de MachineLogic (Bucles for anidados)
+                isCircular = false; 
             }
             else if (heldItem.ItemId == ShelterItemId)
             {
                 radius = 6; 
-                isCircular = true;  // Lógica de EcosystemManager (Vector2.Distance)
-                areaColor = new Color(0, 200, 255, 100); // Azul cian para diferenciar protección
+                isCircular = true;  
+                areaColor = new Color(0, 200, 255, 100); 
                 borderColor = new Color(0, 150, 200, 200);
             }
 
@@ -78,12 +149,10 @@ namespace ELE.Core.Systems
 
             Vector2 cursorTile = Game1.currentCursorTile;
 
-            // Iteramos el área máxima posible (bounding box)
             for (int x = -radius; x <= radius; x++)
             {
                 for (int y = -radius; y <= radius; y++)
                 {
-                    // Si es circular, filtramos por distancia euclidiana
                     if (isCircular)
                     {
                         if (Vector2.Distance(Vector2.Zero, new Vector2(x, y)) > radius)
@@ -131,6 +200,7 @@ namespace ELE.Core.Systems
             }
         }
 
+        // Modificado ligeramente para aceptar thickness y color parametrizados (compatible con lo anterior y lo nuevo)
         private void DrawBorder(SpriteBatch b, Vector2 pos, int width, int height, Color color, int thickness)
         {
             // Top
